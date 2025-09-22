@@ -154,7 +154,8 @@
                     } else {
                         localStorage.setItem('userRole', data.role);
                         localStorage.setItem('userId', data.username);
-                        onLogin(data.role, data.username);
+                        localStorage.setItem('userFullname', data.fullname);
+                        onLogin(data.role, data.username, data.fullname);
                     }
                 } catch (e) {
                     setError("Erro ao autenticar. Por favor, tente novamente.");
@@ -1149,7 +1150,7 @@
                     )
                 );
             }
-
+            
             function FixedPrices({ userId, userRole, showToast }) {
                 const [records, setRecords] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
@@ -1295,16 +1296,16 @@
                   React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-4" }, "Bem-vindo ao TERSYS!"),
                   React.createElement('p', { className: "text-lg text-gray-700 mb-8 max-w-2xl" }, "Sistema de gerenciamento para controlar de forma prática e eficiente a troca de placas entre usinas."),
                   React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl" },
-                    React.createElement('button', { onClick: () => setCurrentPage('dashboard'), className: "p-6 bg-blue-500 text-white rounded-xl shadow-md hover:bg-blue-600 transition" },
-                      React.createElement(LucideIcon, { name: "LayoutDashboard", className: "h-12 w-12 mx-auto mb-3" }),
+                    React.createElement('button', { onClick: () => setCurrentPage('dashboard'), className: "p-6 bg-gray-800 text-white rounded-xl shadow-md hover:bg-gray-900 transition" },
+                      React.createElement(LucideIcon, { name: "LayoutDashboard", className: "h-12 w-12 mx-auto mb-3 text-gray-300" }),
                       React.createElement('span', { className: "text-xl font-semibold" }, "Dashboard")
                     ),
-                    React.createElement('button', { onClick: () => setCurrentPage('outsourcingDistribution'), className: "p-6 bg-green-500 text-white rounded-xl shadow-md hover:bg-green-600 transition" },
-                      React.createElement(LucideIcon, { name: "MapPin", className: "h-12 w-12 mx-auto mb-3" }),
+                    React.createElement('button', { onClick: () => setCurrentPage('outsourcingDistribution'), className: "p-6 bg-yellow-500 text-white rounded-xl shadow-md hover:bg-yellow-600 transition" },
+                      React.createElement(LucideIcon, { name: "MapPin", className: "h-12 w-12 mx-auto mb-3 text-yellow-100" }),
                       React.createElement('span', { className: "text-xl font-semibold" }, "Distribuição")
                     ),
-                    React.createElement('button', { onClick: () => setCurrentPage('branchTransfer'), className: "p-6 bg-purple-500 text-white rounded-xl shadow-md hover:bg-purple-600 transition" },
-                      React.createElement(LucideIcon, { name: "ArrowLeftRight", className: "h-12 w-12 mx-auto mb-3" }),
+                    React.createElement('button', { onClick: () => setCurrentPage('branchTransfer'), className: "p-6 bg-gray-800 text-white rounded-xl shadow-md hover:bg-gray-900 transition" },
+                      React.createElement(LucideIcon, { name: "ArrowLeftRight", className: "h-12 w-12 mx-auto mb-3 text-gray-300" }),
                       React.createElement('span', { className: "text-xl font-semibold" }, "Troca de Filial")
                     )
                   )
@@ -1316,14 +1317,24 @@
             function App() {
                 const [userRole, setUserRole] = React.useState(localStorage.getItem('userRole'));
                 const [userId, setUserId] = React.useState(localStorage.getItem('userId'));
+                const [userFullname, setUserFullname] = React.useState(localStorage.getItem('userFullname'));
                 const [currentPage, setCurrentPage] = React.useState('quickAccessMenu');
                 const [toast, setToast] = React.useState({ show: false, message: '', type: '' });
                 const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
                 const [openMenu, setOpenMenu] = React.useState('');
                 const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
-                const handleLogin = (role, id) => { setUserRole(role); setUserId(id); };
-                const handleLogout = () => { localStorage.clear(); setUserRole(null); setUserId(null); };
+                const handleLogin = (role, id, fullname) => { 
+                    setUserRole(role); 
+                    setUserId(id); 
+                    setUserFullname(fullname);
+                };
+                const handleLogout = () => { 
+                    localStorage.clear(); 
+                    setUserRole(null); 
+                    setUserId(null);
+                    setUserFullname(null);
+                };
                 const showToast = (message, type = 'success') => setToast({ show: true, message, type });
                 const closeToast = () => setToast({ show: false, message: '', type: '' });
 
@@ -1397,7 +1408,7 @@
                 return (
                     React.createElement('div', { className: "flex min-h-screen bg-gray-100" },
                         React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-64'}` },
-                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}` },
+                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between md:justify-center'}` },
                                 !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-12 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
                                 isSidebarCollapsed && React.createElement(LucideIcon, {name: 'Building', className: 'h-8 w-8 cursor-pointer', onClick: toggleSidebarCollapse}),
                                 !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
@@ -1437,7 +1448,7 @@
                            React.createElement('header', { className: "w-full bg-white p-4 rounded-xl shadow-lg mb-8 flex justify-between items-center" },
                                 React.createElement('button', { className: "md:hidden text-gray-700 p-2", onClick: () => setIsSidebarOpen(true) }, React.createElement(LucideIcon, { name: "Menu" })),
                                 React.createElement('div', { className: "text-right text-sm text-gray-600" },
-                                    React.createElement('p', null, "Usuário: ", React.createElement('strong', null, userId)),
+                                    React.createElement('p', null, "Nome: ", React.createElement('strong', null, userFullname)),
                                     React.createElement('p', {className: "capitalize"}, "Função: ", React.createElement('strong', null, userRole))
                                 )
                             ),
