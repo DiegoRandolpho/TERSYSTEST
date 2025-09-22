@@ -999,7 +999,7 @@
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentRecord, setCurrentRecord] = React.useState(null);
-                const initialFormState = { filial: '', municipio: '', km: '', valor: '' };
+                const initialFormState = { filial: '', cidade: '', km: '', valor: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
                 
                 const [searchTerm, setSearchTerm] = React.useState('');
@@ -1034,7 +1034,7 @@
             
                 const handleFormSubmit = async (e) => {
                     e.preventDefault();
-                    if (!formData.filial || !formData.municipio.trim() || formData.km === '' || formData.valor === '') {
+                    if (!formData.filial || !formData.cidade.trim() || formData.km === '' || formData.valor === '') {
                         showToast("Por favor, preencha todos os campos.", "error");
                         return;
                     }
@@ -1051,7 +1051,7 @@
                         
                         const newRecord = {
                             filial: formData.filial,
-                            municipio: formData.municipio.trim(),
+                            cidade: formData.cidade.trim(),
                             km: parseFloat(formData.km),
                             valor: parseFloat(formData.valor)
                         };
@@ -1081,7 +1081,7 @@
                     setCurrentRecord(record);
                     setFormData({
                         filial: record.filial,
-                        municipio: record.municipio,
+                        cidade: record.cidade,
                         km: record.km,
                         valor: record.valor
                     });
@@ -1095,7 +1095,7 @@
                 };
 
                 const filteredRecords = records.filter(r => {
-                    const searchTermMatch = r.municipio.toLowerCase().includes(searchTerm.toLowerCase());
+                    const searchTermMatch = r.cidade.toLowerCase().includes(searchTerm.toLowerCase());
                     const branchMatch = branchFilter === 'all' || r.filial === branchFilter;
                     return searchTermMatch && branchMatch;
                 });
@@ -1110,7 +1110,7 @@
                     ),
                     showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                         React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, React.createElement('option', {value: ""}, "Selecione a Filial"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
-                        React.createElement('input', { name: "municipio", value: formData.municipio, onChange: handleInputChange, placeholder:"Município", required: true, className:"p-2 border rounded" }),
+                        React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder:"Cidade", required: true, className:"p-2 border rounded" }),
                         React.createElement('input', { type: "number", name: "km", value: formData.km, onChange: handleInputChange, placeholder:"KM", required: true, step: "0.01", className:"p-2 border rounded" }),
                         React.createElement('input', { type: "number", name: "valor", value: formData.valor, onChange: handleInputChange, placeholder:"Valor", required: true, step: "0.01", className:"p-2 border rounded" }),
                         React.createElement('div', { className: "md:col-span-full flex justify-end gap-4 mt-2" },
@@ -1120,8 +1120,8 @@
                     ),
                     React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
                         React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Buscar por Município"),
-                            React.createElement('input', { type: "text", placeholder: "Digite o município...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" })
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Buscar por Cidade"),
+                            React.createElement('input', { type: "text", placeholder: "Digite a cidade...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" })
                         ),
                         React.createElement('div', null,
                             React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Filtrar por Filial"),
@@ -1133,15 +1133,154 @@
                     ),
                     React.createElement('div', { className: "overflow-x-auto" },
                         React.createElement('table', { className: "min-w-full bg-white" },
-                            React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Município", "KM", "Valor", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
+                            React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Cidade", "KM", "Valor", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center"}, "Carregando...")) : 
                                 filteredRecords.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
                                 filteredRecords.map(r => React.createElement('tr', {key:r.id},
                                     React.createElement('td',{className:"p-2"}, r.filial),
-                                    React.createElement('td',{className:"p-2"}, r.municipio),
+                                    React.createElement('td',{className:"p-2"}, r.cidade),
                                     React.createElement('td',{className:"p-2"}, r.km),
                                     React.createElement('td',{className:"p-2"}, `R$ ${r.valor.toFixed(2).replace('.', ',')}`),
+                                    React.createElement('td',{className:"p-2"}, formatDate(r.data_criacao)),
+                                    userRole === 'administrador' && React.createElement('td', {className:"p-2 text-right"}, React.createElement('button',{onClick:()=>handleEditClick(r), className:"text-blue-600"}, React.createElement(LucideIcon, {name:'Edit'})))
+                                )))
+                        )
+                    )
+                );
+            }
+
+            function FixedPrices({ userId, userRole, showToast }) {
+                const [records, setRecords] = React.useState([]);
+                const [branches, setBranches] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(true);
+                const [showForm, setShowForm] = React.useState(false);
+                const [isEditing, setIsEditing] = React.useState(false);
+                const [currentRecord, setCurrentRecord] = React.useState(null);
+                const initialFormState = { tipo_de_implemento: '', filial: '', preco: '' };
+                const [formData, setFormData] = React.useState(initialFormState);
+                const implementTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
+
+                const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
+            
+                React.useEffect(() => {
+                    const fetchData = async () => {
+                        setIsLoading(true);
+                        try {
+                            const { data: recordsData, error: recordsError } = await supabase
+                                .from('precos_fixos')
+                                .select('*')
+                                .is('data_encerramento', null)
+                                .order('data_criacao', { ascending: false });
+                            if (recordsError) throw recordsError;
+                            setRecords(recordsData || []);
+            
+                            const { data: bData, error: branchError } = await supabase.from('filiais').select('name').order('name');
+                            if (branchError) throw branchError;
+                            setBranches(bData.map(b => b.name) || []);
+                        } catch (err) {
+                            showToast("Erro ao carregar dados de preços fixos.", "error");
+                        }
+                        setIsLoading(false);
+                    };
+                    fetchData();
+                }, [showToast]);
+            
+                const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+            
+                const handleFormSubmit = async (e) => {
+                    e.preventDefault();
+                    if (!formData.tipo_de_implemento || !formData.filial || formData.preco === '') {
+                        showToast("Por favor, preencha todos os campos.", "error");
+                        return;
+                    }
+
+                    setIsLoading(true);
+                    try {
+                        if (isEditing) {
+                            const { error: updateError } = await supabase
+                                .from('precos_fixos')
+                                .update({ data_encerramento: new Date().toISOString() })
+                                .eq('id', currentRecord.id);
+                            if (updateError) throw updateError;
+                        }
+                        
+                        const newRecord = {
+                            tipo_de_implemento: formData.tipo_de_implemento,
+                            filial: formData.filial,
+                            preco: parseFloat(formData.preco)
+                        };
+
+                        const { error: insertError } = await supabase
+                            .from('precos_fixos')
+                            .insert([newRecord]);
+
+                        if (insertError) throw insertError;
+            
+                        showToast(`Registro ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, "success");
+                        setShowForm(false); 
+                        setIsEditing(false); 
+                        setFormData(initialFormState);
+                        
+                        const { data } = await supabase.from('precos_fixos').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
+                        setRecords(data || []);
+                    } catch (err) {
+                        console.error("Erro ao salvar registro de preço fixo:", err);
+                        showToast("Falha ao salvar o registro de preço fixo.", "error");
+                    }
+                    setIsLoading(false);
+                };
+            
+                const handleEditClick = (record) => {
+                    setIsEditing(true); 
+                    setCurrentRecord(record);
+                    setFormData({
+                        tipo_de_implemento: record.tipo_de_implemento,
+                        filial: record.filial,
+                        preco: record.preco
+                    });
+                    setShowForm(true);
+                };
+            
+                const handleCancel = () => { 
+                    setShowForm(false); 
+                    setIsEditing(false); 
+                    setFormData(initialFormState); 
+                };
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                        React.createElement('h2', { className: "text-2xl font-bold" }, "Preço Fixo"),
+                        userRole === 'administrador' && !showForm && React.createElement('button', { onClick: () => {setShowForm(true); setIsEditing(false); setFormData(initialFormState);}, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
+                            React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
+                            "Novo Registro"
+                        )
+                    ),
+                    showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('select', { name: "tipo_de_implemento", value: formData.tipo_de_implemento, onChange: handleInputChange, required: true, className:"p-2 border rounded" },
+                             React.createElement('option', {value: ""}, "Selecione o Implemento"), 
+                             implementTypes.map(type => React.createElement('option', {key: type, value: type}, type))
+                        ),
+                        React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, 
+                            React.createElement('option', {value: ""}, "Selecione a Filial"), 
+                            branches.map(b => React.createElement('option',{key:b, value:b},b))
+                        ),
+                        React.createElement('input', { type: "number", name: "preco", value: formData.preco, onChange: handleInputChange, placeholder:"Preço", required: true, step: "0.01", className:"p-2 border rounded" }),
+                        React.createElement('div', { className: "md:col-span-full flex justify-end gap-4 mt-2" },
+                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, isEditing ? "Salvar Alterações" : "Salvar")
+                        )
+                    ),
+                    React.createElement('div', { className: "overflow-x-auto" },
+                        React.createElement('table', { className: "min-w-full bg-white" },
+                            React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Tipo de Implemento", "Filial", "Preço", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
+                            React.createElement('tbody', {className:"divide-y"}, 
+                                isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center"}, "Carregando...")) : 
+                                records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
+                                records.map(r => React.createElement('tr', {key:r.id},
+                                    React.createElement('td',{className:"p-2"}, r.tipo_de_implemento),
+                                    React.createElement('td',{className:"p-2"}, r.filial),
+                                    React.createElement('td',{className:"p-2"}, `R$ ${r.preco.toFixed(2).replace('.', ',')}`),
                                     React.createElement('td',{className:"p-2"}, formatDate(r.data_criacao)),
                                     userRole === 'administrador' && React.createElement('td', {className:"p-2 text-right"}, React.createElement('button',{onClick:()=>handleEditClick(r), className:"text-blue-600"}, React.createElement(LucideIcon, {name:'Edit'})))
                                 )))
@@ -1246,6 +1385,7 @@
                         case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
+                        case 'fixedPrices': return React.createElement(FixedPrices, { userId, userRole, showToast });
                         case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
                         case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
                         case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
@@ -1272,6 +1412,7 @@
                                         React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' })
                                      ),
                                      React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
+                                        React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
                                         React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
                                         React.createElement(MenuItem, { page: 'additionalCities', icon: 'Building', text: 'Adicional Cidades' })
                                      ),
