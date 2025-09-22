@@ -877,7 +877,7 @@
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentDisplacement, setCurrentDisplacement] = React.useState(null);
-                const initialFormState = { tipo_implemento: '', filial_origem: '', filial_destino: '', km: '', valor: '' };
+                const initialFormState = { tipo_de_implemento: '', filial_origem: '', filial_destino: '', km: '', valor: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
             
@@ -919,7 +919,7 @@
             
                 const handleEditClick = (d) => {
                     setIsEditing(true); setCurrentDisplacement(d);
-                    setFormData({ tipo_implemento: d.tipo_implemento, filial_origem: d.filial_origem, filial_destino: d.filial_destino, km: d.km, valor: d.valor });
+                    setFormData({ tipo_de_implemento: d.tipo_de_implemento, filial_origem: d.filial_origem, filial_destino: d.filial_destino, km: d.km, valor: d.valor });
                     setShowForm(true);
                 };
             
@@ -931,7 +931,7 @@
                         userRole === 'administrador' && !showForm && React.createElement('button', { onClick: () => setShowForm(true), className: "p-2 bg-blue-600 text-white rounded" }, "Novo Registro")
                     ),
                     showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-                        React.createElement('input', { name: "tipo_implemento", value: formData.tipo_implemento, onChange: handleInputChange, placeholder:"Tipo", className:"p-2 border rounded" }),
+                        React.createElement('input', { name: "tipo_de_implemento", value: formData.tipo_de_implemento, onChange: handleInputChange, placeholder:"Tipo de Implemento", className:"p-2 border rounded" }),
                         React.createElement('select', { name: "filial_origem", value: formData.filial_origem, onChange: handleInputChange, className:"p-2 border rounded" }, React.createElement('option', {}, "Origem"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
                         React.createElement('select', { name: "filial_destino", value: formData.filial_destino, onChange: handleInputChange, className:"p-2 border rounded" }, React.createElement('option', {}, "Destino"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
                         React.createElement('input', { type: "number", name: "km", value: formData.km, onChange: handleInputChange, placeholder:"KM", className:"p-2 border rounded" }),
@@ -945,7 +945,7 @@
                         React.createElement('table', { className: "min-w-full bg-white" },
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Tipo", "Origem", "Destino", "KM", "Valor", "Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center"}, "Carregando...")) : displacements.map(d => React.createElement('tr', {key:d.id},
-                                React.createElement('td',{className:"p-2"}, d.tipo_implemento),
+                                React.createElement('td',{className:"p-2"}, d.tipo_de_implemento),
                                 React.createElement('td',{className:"p-2"}, d.filial_origem),
                                 React.createElement('td',{className:"p-2"}, d.filial_destino),
                                 React.createElement('td',{className:"p-2"}, d.km),
@@ -1064,7 +1064,7 @@
                 return (
                     React.createElement('div', { className: "flex min-h-screen bg-gray-100" },
                         React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-64'}` },
-                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between md:justify-center'}` },
+                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}` },
                                 !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-12 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
                                 isSidebarCollapsed && React.createElement(LucideIcon, {name: 'Building', className: 'h-8 w-8 cursor-pointer', onClick: toggleSidebarCollapse}),
                                 !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
