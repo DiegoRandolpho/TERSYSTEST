@@ -1034,7 +1034,7 @@
             
                 const handleFormSubmit = async (e) => {
                     e.preventDefault();
-                    if (!formData.filial || !formData.municipio.trim() || !formData.km || !formData.valor) {
+                    if (!formData.filial || !formData.municipio.trim() || formData.km === '' || formData.valor === '') {
                         showToast("Por favor, preencha todos os campos.", "error");
                         return;
                     }
@@ -1049,13 +1049,16 @@
                             if (updateError) throw updateError;
                         }
                         
+                        const newRecord = {
+                            filial: formData.filial,
+                            municipio: formData.municipio.trim(),
+                            km: parseFloat(formData.km),
+                            valor: parseFloat(formData.valor)
+                        };
+
                         const { error: insertError } = await supabase
                             .from('adicionais_cidades')
-                            .insert([{
-                                ...formData,
-                                km: parseFloat(formData.km),
-                                valor: parseFloat(formData.valor)
-                            }]);
+                            .insert([newRecord]);
 
                         if (insertError) throw insertError;
             
@@ -1307,4 +1310,3 @@
     </script>
 </body>
 </html>
-
