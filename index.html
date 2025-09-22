@@ -69,7 +69,9 @@
             Edit: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
             Save: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
             Ban: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ban"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>',
-            DollarSign: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dollar-sign"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
+            DollarSign: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dollar-sign"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+            ChevronsLeft: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-left"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>',
+            ChevronsRight: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>'
         };
 
         function Toast({ message, type, onClose }) {
@@ -987,6 +989,7 @@
                 const [toast, setToast] = React.useState({ show: false, message: '', type: '' });
                 const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
                 const [openMenu, setOpenMenu] = React.useState(''); // State to control which menu is open
+                const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
                 const handleLogin = (role, id) => { setUserRole(role); setUserId(id); };
                 const handleLogout = () => { localStorage.clear(); setUserRole(null); setUserId(null); };
@@ -994,7 +997,18 @@
                 const closeToast = () => setToast({ show: false, message: '', type: '' });
 
                 const toggleMenu = (menu) => {
-                    setOpenMenu(openMenu === menu ? '' : menu);
+                    if (isSidebarCollapsed) {
+                        setIsSidebarCollapsed(false);
+                    } else {
+                        setOpenMenu(openMenu === menu ? '' : menu);
+                    }
+                };
+                
+                const toggleSidebarCollapse = () => {
+                    setIsSidebarCollapsed(!isSidebarCollapsed);
+                    if (!isSidebarCollapsed) {
+                        setOpenMenu(''); 
+                    }
                 };
 
                 if (!userRole) return React.createElement(LoginPage, { onLogin: handleLogin });
@@ -1005,10 +1019,10 @@
                      React.createElement('li', null,
                         React.createElement('button', {
                            onClick: () => { setCurrentPage(page); setIsSidebarOpen(false); },
-                           className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 text-gray-300'}`
+                           className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 text-gray-300'}`
                         },
-                        React.createElement(LucideIcon, { name: icon, className: "mr-3 h-5 w-5" }),
-                        text
+                        React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
+                        !isSidebarCollapsed && text
                        )
                      )
                    );
@@ -1020,15 +1034,15 @@
                         React.createElement('li', { className: "mb-2" },
                             React.createElement('button', {
                                 onClick: () => toggleMenu(menuKey),
-                                className: `flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors ${isOpen ? 'bg-gray-700' : 'hover:bg-gray-700'} text-gray-200`
+                                className: `flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${isOpen && !isSidebarCollapsed ? 'bg-gray-700' : 'hover:bg-gray-700'} text-gray-200`
                             },
                                 React.createElement('span', {className: 'flex items-center'},
-                                    React.createElement(LucideIcon, { name: icon, className: "mr-3 h-5 w-5" }),
-                                    title
+                                    React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
+                                    !isSidebarCollapsed && title
                                 ),
-                                React.createElement(LucideIcon, { name: isOpen ? "ChevronUp" : "ChevronDown", className: "h-5 w-5" })
+                                !isSidebarCollapsed && React.createElement(LucideIcon, { name: isOpen ? "ChevronUp" : "ChevronDown", className: "h-5 w-5" })
                             ),
-                            isOpen && React.createElement('ul', { className: "ml-6 mt-2 space-y-2" }, children)
+                            !isSidebarCollapsed && isOpen && React.createElement('ul', { className: "ml-6 mt-2 space-y-2" }, children)
                         )
                     );
                 };
@@ -1049,10 +1063,11 @@
 
                 return (
                     React.createElement('div', { className: "flex min-h-screen bg-gray-100" },
-                        React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white w-64 p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform z-30 flex flex-col rounded-r-xl` },
+                        React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-64'}` },
                             React.createElement('div', { className: "flex items-center justify-between mb-8" },
-                                React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-12 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
-                                React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
+                                !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-12 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
+                                isSidebarCollapsed && React.createElement(LucideIcon, {name: 'Building', className: 'h-8 w-8 mx-auto cursor-pointer', onClick: toggleSidebarCollapse}),
+                                !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
                             ),
                             React.createElement('nav', { className: "flex-grow" },
                                 React.createElement('ul', { className: "space-y-2" },
@@ -1071,9 +1086,13 @@
                                      )
                                 )
                             ),
-                            React.createElement('div', null,
-                                React.createElement('button', { onClick: handleLogout, className: "w-full flex items-center p-3 rounded-lg text-red-400 hover:bg-gray-700" },
-                                    React.createElement(LucideIcon, { name: "LogOut", className: "w-6 h-6 mr-3" }), 'Sair'
+                            React.createElement('div', {className: 'mt-auto pt-4 border-t border-gray-700'},
+                                React.createElement('button', { onClick: toggleSidebarCollapse, className: "w-full flex items-center p-3 rounded-lg text-gray-400 hover:bg-gray-700 justify-center mb-2" },
+                                    React.createElement(LucideIcon, { name: isSidebarCollapsed ? "ChevronsRight" : "ChevronsLeft", className: "w-6 h-6" })
+                                ),
+                                React.createElement('button', { onClick: handleLogout, className: `w-full flex items-center p-3 rounded-lg text-red-400 hover:bg-gray-700 ${isSidebarCollapsed ? 'justify-center' : ''}` },
+                                    React.createElement(LucideIcon, { name: "LogOut", className: `w-6 h-6 ${!isSidebarCollapsed && 'mr-3'}` }),
+                                    !isSidebarCollapsed && 'Sair'
                                 )
                             )
                         ),
