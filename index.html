@@ -508,6 +508,7 @@
 
             function UserManagement({ userId, showToast }) {
               const [newUsername, setNewUsername] = React.useState('');
+              const [newFullname, setNewFullname] = React.useState('');
               const [newPassword, setNewPassword] = React.useState('');
               const [newUserRole, setNewUserRole] = React.useState('usuario');
               const [usersList, setUsersList] = React.useState([]);
@@ -533,14 +534,29 @@
 
               const handleAddUser = async (e) => {
                 e.preventDefault();
-                if (!newUsername.trim() || !newPassword.trim()) { showToast("Preencha todos os campos.", "error"); return; }
+                if (!newUsername.trim() || !newFullname.trim() || !newPassword.trim()) { 
+                    showToast("Preencha todos os campos.", "error"); 
+                    return; 
+                }
                 setIsLoading(true);
                 try {
                   const { data: existing } = await supabase.from('app_users').select('username').eq('username', newUsername.trim());
-                  if (existing && existing.length > 0) { showToast("Nome de usuário já existe.", "error"); setIsLoading(false); return; }
-                  await supabase.from('app_users').insert([{ username: newUsername.trim(), password: newPassword, role: newUserRole }]);
+                  if (existing && existing.length > 0) { 
+                      showToast("Nome de usuário já existe.", "error"); 
+                      setIsLoading(false); 
+                      return; 
+                  }
+                  await supabase.from('app_users').insert([{ 
+                      username: newUsername.trim(), 
+                      fullname: newFullname.trim(), 
+                      password: newPassword, 
+                      role: newUserRole 
+                  }]);
                   showToast("Usuário adicionado!", "success");
-                  setNewUsername(''); setNewPassword(''); setNewUserRole('usuario');
+                  setNewUsername(''); 
+                  setNewFullname('');
+                  setNewPassword(''); 
+                  setNewUserRole('usuario');
                   const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
                   setUsersList(data);
                 } catch(e) {
@@ -569,17 +585,24 @@
 
               return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Usuários"),
-                React.createElement('form', { onSubmit: handleAddUser, className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" },
+                React.createElement('form', { onSubmit: handleAddUser, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" },
                   React.createElement('input', { placeholder: "Nome de Usuário", value: newUsername, onChange: e => setNewUsername(e.target.value), className: "p-2 border rounded" }),
+                  React.createElement('input', { placeholder: "Nome Completo", value: newFullname, onChange: e => setNewFullname(e.target.value), className: "p-2 border rounded" }),
                   React.createElement('input', { type: "password", placeholder: "Senha", value: newPassword, onChange: e => setNewPassword(e.target.value), className: "p-2 border rounded" }),
                   React.createElement('select', { value: newUserRole, onChange: e => setNewUserRole(e.target.value), className: "p-2 border rounded" }, roles.map(r => React.createElement('option', { key: r, value: r }, r.charAt(0).toUpperCase() + r.slice(1)))),
-                  React.createElement('div', { className: "md:col-span-2 flex justify-center" }, React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, "Adicionar Usuário"))
+                  React.createElement('div', { className: "lg:col-span-3 flex justify-center" }, React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded w-full md:w-auto" }, "Adicionar Usuário"))
                 ),
                 React.createElement('div', { className: "overflow-x-auto" },
                   React.createElement('table', { className: "min-w-full bg-white" },
-                    React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, React.createElement('th', {className:"p-2"}, "Usuário"), React.createElement('th', {className:"p-2"}, "Função"), React.createElement('th', {className:"p-2 text-right"}, "Ações"))),
+                    React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, 
+                        React.createElement('th', {className:"p-2 text-left"}, "Usuário"), 
+                        React.createElement('th', {className:"p-2 text-left"}, "Nome Completo"), 
+                        React.createElement('th', {className:"p-2 text-left"}, "Função"), 
+                        React.createElement('th', {className:"p-2 text-right"}, "Ações")
+                    )),
                     React.createElement('tbody', { className: "divide-y" }, usersList.map(user => React.createElement('tr', { key: user.id },
                       React.createElement('td', {className:"p-2"}, user.username),
+                      React.createElement('td', {className:"p-2"}, user.fullname),
                       React.createElement('td', {className:"p-2 capitalize"}, user.role),
                       React.createElement('td', {className:"p-2 text-right"}, React.createElement('button', { onClick: () => confirmDeleteUser(user), className: "text-red-600" }, React.createElement(LucideIcon, {name: 'Trash2'})))
                     )))
@@ -1072,4 +1095,3 @@
     </script>
 </body>
 </html>
-
