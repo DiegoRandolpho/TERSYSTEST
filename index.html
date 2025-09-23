@@ -1487,7 +1487,7 @@
                         React.createElement('li', { className: "mb-2" },
                             React.createElement('button', {
                                 onClick: () => toggleMenu(menuKey),
-                                className: `flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${isOpen && !isSidebarCollapsed ? 'bg-gray-700' : 'hover:bg-gray-700'} text-gray-200`
+                                className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${isOpen && !isSidebarCollapsed ? 'bg-gray-700' : 'hover:bg-gray-700'} text-gray-200`
                             },
                                 React.createElement('span', {className: 'flex items-center'},
                                     React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
@@ -1519,7 +1519,7 @@
                 return (
                     React.createElement('div', { className: "flex min-h-screen bg-gray-100" },
                         React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-64'}` },
-                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}` },
+                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between md:justify-center'}` },
                                 !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-12 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
                                 isSidebarCollapsed && React.createElement(LucideIcon, {name: 'Building', className: 'h-8 w-8 cursor-pointer', onClick: toggleSidebarCollapse}),
                                 !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
