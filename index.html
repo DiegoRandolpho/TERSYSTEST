@@ -843,10 +843,8 @@
                 const [currentConcession, setCurrentConcession] = React.useState(null);
                 const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
-                
                 const [allPlates, setAllPlates] = React.useState([]);
                 const [allTerceiros, setAllTerceiros] = React.useState([]);
-
                 const [searchTerm, setSearchTerm] = React.useState('');
                 const [showConfirmModal, setShowConfirmModal] = React.useState(false);
                 const [concessionToEnd, setConcessionToEnd] = React.useState(null);
@@ -862,7 +860,8 @@
                     try {
                         const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
                             supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
-                            supabase.from('terceiros').select('codSAP, apelido, cnpj'),
+                            // ATUALIZADO: Busca nome e cpf
+                            supabase.from('terceiros').select('codSAP, apelido, cnpj, nome, cpf'),
                             supabase.from('equipamentos').select('plate')
                         ]);
 
@@ -874,16 +873,17 @@
                         setAllPlates(equipamentosRes.data.map(e => e.plate) || []);
 
                         const terceirosMap = new Map(terceirosRes.data.map(t => [t.codSAP, t]));
-                        
                         const joinedData = concessaoRes.data.map(c => {
-                            const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A' };
+                            // ATUALIZADO: Junta nome e cpf aos dados
+                            const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome: 'N/A', cpf: 'N/A' };
                             return {
                                 ...c,
                                 apelido: terceiroInfo.apelido,
                                 cnpj: terceiroInfo.cnpj,
+                                nome: terceiroInfo.nome,
+                                cpf: terceiroInfo.cpf
                             };
                         });
-
                         setConcessions(joinedData);
 
                     } catch (err) {
@@ -909,7 +909,6 @@
                         return;
                     }
                     setIsLoading(true);
-
                     try {
                         const record = {
                             placa: formData.placa,
@@ -917,7 +916,6 @@
                             valorfixo: parseFloat(formData.valorfixo),
                             data_inicio: formData.data_inicio,
                         };
-
                         if (isEditing) {
                             const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
                             if (error) throw error;
@@ -964,10 +962,7 @@
                     if (!concessionToEnd) return;
                     setIsLoading(true);
                     try {
-                        const { error } = await supabase
-                            .from('concessao')
-                            .update({ data_fim: new Date().toISOString() })
-                            .eq('id', concessionToEnd.id);
+                        const { error } = await supabase.from('concessao').update({ data_fim: new Date().toISOString() }).eq('id', concessionToEnd.id);
                         if (error) throw error;
                         showToast("Concessão encerrada com sucesso!", "success");
                         fetchAllData();
@@ -979,13 +974,16 @@
                     setIsLoading(false);
                 };
 
+                // ATUALIZADO: Busca inclui nome e cpf
                 const filteredList = concessions.filter(c => {
                     const search = searchTerm.toLowerCase();
                     return (
                         (c.apelido && c.apelido.toLowerCase().includes(search)) ||
                         (c.codSAP && c.codSAP.toLowerCase().includes(search)) ||
                         (c.placa && c.placa.toLowerCase().includes(search)) ||
-                        (c.cnpj && c.cnpj.toLowerCase().includes(search))
+                        (c.cnpj && c.cnpj.toLowerCase().includes(search)) ||
+                        (c.nome && c.nome.toLowerCase().includes(search)) ||
+                        (c.cpf && c.cpf.toLowerCase().includes(search))
                     );
                 });
 
@@ -1013,24 +1011,28 @@
                             React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
                         )
                     ),
-                    React.createElement('input', { type: "text", placeholder: "Buscar por Apelido, Placa, CNPJ...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+                    React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
                     React.createElement('div', { className: "overflow-x-auto" },
                         React.createElement('table', { className: "min-w-full bg-white text-sm" },
                             React.createElement('thead', { className: "bg-gray-100" },
                                 React.createElement('tr', null,
-                                    ["Apelido", "Cód. SAP", "Placa", "CNPJ", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
+                                    // ATUALIZADO: Novos cabeçalhos
+                                    ["Apelido", "Nome", "Cód. SAP", "Placa", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
                                     userRole === 'administrador' && React.createElement('th', { className: "p-2 text-right" }, "Ações")
                                 )
                             ),
                             React.createElement('tbody', { className: "divide-y" },
-                                isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 8 : 7, className: "p-4 text-center" }, "Carregando...")) :
-                                !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 8 : 7, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 10 : 9, className: "p-4 text-center" }, "Carregando...")) :
+                                !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 10 : 9, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
                                 filteredList.map(c =>
                                     React.createElement('tr', { key: c.id, className: "hover:bg-gray-50" },
+                                        // ATUALIZADO: Novas células
                                         React.createElement('td', { className: "p-2" }, c.apelido),
+                                        React.createElement('td', { className: "p-2" }, c.nome),
                                         React.createElement('td', { className: "p-2" }, c.codSAP),
                                         React.createElement('td', { className: "p-2" }, c.placa),
-                                        React.createElement('td', { className: "p-2" }, c.cnpj),
+                                        React.createElement('td', { className: "p-2" }, formatCNPJ(c.cnpj)),
+                                        React.createElement('td', { className: "p-2" }, formatCPF(c.cpf)),
                                         React.createElement('td', { className: "p-2" }, formatDate(c.data_inicio)),
                                         React.createElement('td', { className: "p-2" }, formatDate(c.data_fim)),
                                         React.createElement('td', { className: "p-2" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
@@ -2484,6 +2486,7 @@
     </script>
 </body>
 </html>
+
 
 
 
