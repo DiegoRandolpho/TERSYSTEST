@@ -6,6 +6,8 @@
     <title>TERSYS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -2194,6 +2196,152 @@
                     )
                 );
             }
+            function ExpenseQuery({ userId, userRole, showToast }) {
+                const [periodo, setPeriodo] = React.useState('');
+                const [expenses, setExpenses] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [isImporting, setIsImporting] = React.useState(false);
+                const [file, setFile] = React.useState(null);
+
+                // Busca despesas no banco de dados quando o período muda
+                React.useEffect(() => {
+                    const fetchExpenses = async () => {
+                        if (periodo.match(/^\d{2}\/\d{4}$/)) { // Valida formato MM/YYYY
+                            setIsLoading(true);
+                            try {
+                                const { data, error } = await supabase
+                                    .from('despesas_manutencao')
+                                    .select('*')
+                                    .eq('periodo_referencia', periodo)
+                                    .order('placa');
+                                
+                                if (error) throw error;
+                                setExpenses(data || []);
+                            } catch (err) {
+                                showToast("Erro ao buscar despesas.", "error");
+                            }
+                            setIsLoading(false);
+                        } else {
+                            setExpenses([]);
+                        }
+                    };
+
+                    const timerId = setTimeout(() => fetchExpenses(), 500); // Espera o usuário parar de digitar
+                    return () => clearTimeout(timerId);
+                }, [periodo, showToast]);
+
+                const handleFileChange = (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        setFile(e.target.files[0]);
+                    }
+                };
+
+                const handleImport = () => {
+                    if (!file) {
+                        showToast("Por favor, selecione um arquivo para importar.", "error");
+                        return;
+                    }
+                    if (!periodo.match(/^\d{2}\/\d{4}$/)) {
+                        showToast("Por favor, insira um período de referência válido (MM/AAAA).", "error");
+                        return;
+                    }
+
+                    setIsImporting(true);
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet);
+
+                            // Filtra as linhas onde 'Tipo Lançamento' é 2 e formata para o banco de dados
+                            const dataToInsert = json
+                                .filter(row => row['Tipo Lançamento'] == 2)
+                                .map(row => ({
+                                    periodo_referencia: periodo,
+                                    placa: row['Placa'],
+                                    ordem_manutencao: row['Fatura/Doc.Contab'],
+                                    pedido: row['Pedido'],
+                                    descricao: row['Material']
+                                }));
+                            
+                            if (dataToInsert.length === 0) {
+                                showToast("Nenhuma despesa válida (Tipo Lançamento = 2) encontrada na planilha.", "info");
+                                setIsImporting(false);
+                                return;
+                            }
+
+                            // Insere os dados no Supabase
+                            const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
+                            if (error) throw error;
+
+                            showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
+                            setFile(null); 
+                            document.getElementById('file-input').value = ''; // Limpa o campo de arquivo
+                            
+                            // Atualiza a tabela com os novos dados
+                            const { data: updatedData } = await supabase.from('despesas_manutencao').select('*').eq('periodo_referencia', periodo).order('placa');
+                            setExpenses(updatedData || []);
+
+                        } catch (err) {
+                            showToast(`Erro ao processar o arquivo: ${err.message}`, "error");
+                        }
+                        setIsImporting(false);
+                    };
+                    reader.readAsArrayBuffer(file);
+                };
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
+                    
+                    // Seção de Importação para Administradores
+                    userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
+                        React.createElement('div', { className: "md:col-span-1" },
+                           React.createElement('label', { htmlFor: 'periodo', className: "block text-sm font-medium text-gray-700 mb-1" }, "Período de Referência (MM/AAAA)"),
+                           React.createElement('input', { id: 'periodo', type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(e.target.value), className: "w-full p-2 border rounded" })
+                        ),
+                        React.createElement('div', { className: "md:col-span-1" },
+                            React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha de Despesas"),
+                            React.createElement('input', {
+                                id: 'file-input',
+                                type: "file",
+                                onChange: handleFileChange,
+                                className: "w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                                accept: ".xlsx, .xls"
+                            })
+                        ),
+                        React.createElement('button', { onClick: handleImport, disabled: isImporting, className: "w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400" },
+                           isImporting ? 'Importando...' : 'Importar Dados'
+                        )
+                    ),
+
+                    // Tabela de Visualização
+                    React.createElement('div', { className: "overflow-x-auto" },
+                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                            React.createElement('thead', { className: "bg-gray-100" },
+                                React.createElement('tr', null,
+                                    ["Período", "Placa", "Ordem da Manutenção", "Pedido", "Descrição"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
+                                )
+                            ),
+                            React.createElement('tbody', { className: "divide-y" },
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
+                                expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-gray-500" }, "Nenhuma despesa encontrada para o período informado.")) :
+                                expenses.map(exp =>
+                                    React.createElement('tr', { key: exp.id, className: "hover:bg-gray-50" },
+                                        React.createElement('td', { className: "p-2" }, exp.periodo_referencia),
+                                        React.createElement('td', { className: "p-2" }, exp.placa),
+                                        React.createElement('td', { className: "p-2" }, exp.ordem_manutencao),
+                                        React.createElement('td', { className: "p-2" }, exp.pedido),
+                                        React.createElement('td', { className: "p-2" }, exp.descricao)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
             function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
               const ALL_PAGES = {
                     dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
@@ -2410,6 +2558,7 @@
                         case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
                         case 'contractManagement': return React.createElement(ContractManagement, { userId, userRole, showToast });
                         case 'plateHistory': return React.createElement(PlateHistory, { showToast });
+                        case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
                         case 'fixedPrices': return React.createElement(FixedPrices, { userId, userRole, showToast });
@@ -2440,7 +2589,8 @@
                                          React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
                                         React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
                                          React.createElement(MenuItem, { page: 'contractManagement', icon: 'FileText', text: 'Contrato/Distrato' }),
-                                        React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' })
+                                        React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta de Placas' }),
+                                        React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Consulta Despesa' })
                                      ),
                                      React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
                                         React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
@@ -2489,6 +2639,7 @@
     </script>
 </body>
 </html>
+
 
 
 
