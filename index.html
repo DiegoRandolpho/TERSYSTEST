@@ -1132,12 +1132,23 @@
                                 if (newPlateError) throw newPlateError;
                                 break;
                             
+                            // NOVO CASE ADICIONADO
+                            case 'Encerramento de Placa':
+                                const { error: terminatePlateError } = await supabase
+                                    .from('concessao')
+                                    .update({ data_fim: formData.data_alteracao })
+                                    .eq('codSAP', formData.codSAP)
+                                    .eq('placa', formData.placa) // Finaliza apenas a placa específica
+                                    .is('data_fim', null);
+                                if (terminatePlateError) throw terminatePlateError;
+                                break;
+
                             case 'Encerramento':
                                 const { error: terminateError } = await supabase
                                     .from('concessao')
                                     .update({ data_fim: formData.data_alteracao })
                                     .eq('codSAP', formData.codSAP)
-                                    .is('data_fim', null);
+                                    .is('data_fim', null); // Finaliza todas as placas do terceiro
                                 if (terminateError) throw terminateError;
                                 break;
                         }
@@ -2324,6 +2335,7 @@
     </script>
 </body>
 </html>
+
 
 
 
