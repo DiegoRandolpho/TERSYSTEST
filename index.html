@@ -2258,7 +2258,7 @@
 
                             // Filtra as linhas onde 'Tipo Lançamento' é 2 e formata para o banco de dados
                             const dataToInsert = json
-                                .filter(row => row['Tipo Lançamento'] == 2)
+                                .filter(row => row['Tipo Lancamento'] == 2)
                                 .map(row => ({
                                     periodo_referencia: periodo,
                                     placa: row['Placa'],
@@ -2639,6 +2639,7 @@
     </script>
 </body>
 </html>
+
 
 
 
