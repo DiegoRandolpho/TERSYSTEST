@@ -792,7 +792,7 @@
                         React.createElement('tr', { key: t.id, className: "hover:bg-gray-50" },
                           React.createElement('td', { className: "p-2" }, t.apelido),
                           React.createElement('td', { className: "p-2" }, t.codSAP),
-                          React.createElement('td', { className: "p-2" }, t.cnpj),
+                          React.createElement('td', { className: "p-2" }, formatCNPJ(t.cnpj)),
                           React.createElement('td', { className: "p-2" }, t.usuarioCriacao),
                           React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
                             React.createElement('button', { onClick: () => handleEditClick(t), className: "text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit' })),
@@ -2314,6 +2314,7 @@
     </script>
 </body>
 </html>
+
 
 
 
