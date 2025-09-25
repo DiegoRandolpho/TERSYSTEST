@@ -2203,6 +2203,18 @@
                 const [isImporting, setIsImporting] = React.useState(false);
                 const [file, setFile] = React.useState(null);
 
+                // NOVO: Função para formatar o campo de período (MM/AAAA)
+                const formatPeriodo = (value) => {
+                    const cleaned = ('' + value).replace(/[^\d]/g, '');
+                    const truncated = cleaned.slice(0, 6); // Limita a 6 dígitos (MMYYYY)
+                    
+                    if (truncated.length > 2) {
+                        return `${truncated.slice(0, 2)}/${truncated.slice(2)}`;
+                    }
+                    
+                    return truncated;
+                };
+
                 // Busca despesas no banco de dados quando o período muda
                 React.useEffect(() => {
                     const fetchExpenses = async () => {
@@ -2256,9 +2268,8 @@
                             const worksheet = workbook.Sheets[sheetName];
                             const json = XLSX.utils.sheet_to_json(worksheet);
 
-                            // Filtra as linhas onde 'Tipo Lançamento' é 2 e formata para o banco de dados
                             const dataToInsert = json
-                                .filter(row => row['Tipo Lancamento'] == 2)
+                                .filter(row => row['Lançamento'] == 2)
                                 .map(row => ({
                                     periodo_referencia: periodo,
                                     placa: row['Placa'],
@@ -2268,20 +2279,18 @@
                                 }));
                             
                             if (dataToInsert.length === 0) {
-                                showToast("Nenhuma despesa válida (Tipo Lançamento = 2) encontrada na planilha.", "info");
+                                showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
                                 setIsImporting(false);
                                 return;
                             }
 
-                            // Insere os dados no Supabase
                             const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
                             if (error) throw error;
 
                             showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
                             setFile(null); 
-                            document.getElementById('file-input').value = ''; // Limpa o campo de arquivo
+                            document.getElementById('file-input').value = '';
                             
-                            // Atualiza a tabela com os novos dados
                             const { data: updatedData } = await supabase.from('despesas_manutencao').select('*').eq('periodo_referencia', periodo).order('placa');
                             setExpenses(updatedData || []);
 
@@ -2296,11 +2305,11 @@
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
                     
-                    // Seção de Importação para Administradores
                     userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
                         React.createElement('div', { className: "md:col-span-1" },
                            React.createElement('label', { htmlFor: 'periodo', className: "block text-sm font-medium text-gray-700 mb-1" }, "Período de Referência (MM/AAAA)"),
-                           React.createElement('input', { id: 'periodo', type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(e.target.value), className: "w-full p-2 border rounded" })
+                           // ATUALIZADO: O 'onChange' agora usa a nova função de formatação
+                           React.createElement('input', { id: 'periodo', type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
                         ),
                         React.createElement('div', { className: "md:col-span-1" },
                             React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha de Despesas"),
@@ -2317,7 +2326,6 @@
                         )
                     ),
 
-                    // Tabela de Visualização
                     React.createElement('div', { className: "overflow-x-auto" },
                         React.createElement('table', { className: "min-w-full bg-white text-sm" },
                             React.createElement('thead', { className: "bg-gray-100" },
@@ -2639,6 +2647,7 @@
     </script>
 </body>
 </html>
+
 
 
 
