@@ -74,6 +74,17 @@
             ChevronsRight: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>'
         };
 
+            function formatCNPJ(value) {
+            if (!value) return "";
+            const cnpj = value.replace(/[^\d]/g, ""); // Remove tudo que não é dígito
+            const len = cnpj.length;
+
+            if (len <= 2) return cnpj;
+            if (len <= 5) return `${cnpj.slice(0, 2)}.${cnpj.slice(2)}`;
+            if (len <= 8) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5)}`;
+            if (len <= 12) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`;
+            return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12, 14)}`;
+        }
         function Toast({ message, type, onClose }) {
             const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
             const icon = type === 'success' ? '✔' : '✖';
@@ -657,11 +668,11 @@
                 fetchTerceiros();
               }, [fetchTerceiros]);
           
-              const handleInputChange = (e) => {
+                const handleInputChange = (e) => {
                 const { name, value } = e.target;
-                setFormData(prev => ({ ...prev, [name]: value }));
+                const processedValue = name === 'cnpj' ? formatCNPJ(value) : value;
+                setFormData(prev => ({ ...prev, [name]: processedValue }));
               };
-          
               const handleFormSubmit = async (e) => {
                 e.preventDefault();
                 if (!formData.apelido.trim() || !formData.codSAP.trim() || !formData.cnpj.trim()) {
@@ -677,7 +688,7 @@
                       .update({ 
                         apelido: formData.apelido.trim(), 
                         codSAP: formData.codSAP.trim(), 
-                        cnpj: formData.cnpj.trim() 
+                        cnpj: formData.cnpj.replace(/[^\d]/g, '') 
                       })
                       .eq('id', currentTerceiro.id);
                     if (error) throw error;
@@ -689,7 +700,7 @@
                         ...formData,
                         apelido: formData.apelido.trim(),
                         codSAP: formData.codSAP.trim(),
-                        cnpj: formData.cnpj.trim(),
+                        formData.cnpj.replace(/[^\d]/g, ''),
                         usuarioCriacao: userId
                       }]);
                     if (error) throw error;
@@ -2303,4 +2314,5 @@
     </script>
 </body>
 </html>
+
 
