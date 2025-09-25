@@ -656,12 +656,13 @@
               const [showForm, setShowForm] = React.useState(false);
               const [isEditing, setIsEditing] = React.useState(false);
               const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
-              const initialFormState = { apelido: '', codSAP: '', cnpj: '' };
+              // ATUALIZADO: Adicionado nome e cpf
+              const initialFormState = { apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '' };
               const [formData, setFormData] = React.useState(initialFormState);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [terceiroToDelete, setTerceiroToDelete] = React.useState(null);
-          
+              
               const fetchTerceiros = React.useCallback(async () => {
                 setIsLoading(true);
                 try {
@@ -673,46 +674,46 @@
                 }
                 setIsLoading(false);
               }, [showToast]);
-          
+
               React.useEffect(() => {
                 fetchTerceiros();
               }, [fetchTerceiros]);
-          
-                const handleInputChange = (e) => {
+
+              // ATUALIZADO: handleInputChange agora formata CPF
+              const handleInputChange = (e) => {
                 const { name, value } = e.target;
-                const processedValue = name === 'cnpj' ? formatCNPJ(value) : value;
+                let processedValue = value;
+                if (name === 'cnpj') {
+                    processedValue = formatCNPJ(value);
+                } else if (name === 'cpf') {
+                    processedValue = formatCPF(value);
+                }
                 setFormData(prev => ({ ...prev, [name]: processedValue }));
               };
+          
               const handleFormSubmit = async (e) => {
                 e.preventDefault();
                 if (!formData.apelido.trim() || !formData.codSAP.trim() || !formData.cnpj.trim()) {
-                  showToast("Por favor, preencha todos os campos.", "error");
+                  showToast("Por favor, preencha os campos obrigatórios (Apelido, Cód. SAP, CNPJ).", "error");
                   return;
                 }
                 setIsLoading(true);
-          
                 try {
+                  // ATUALIZADO: Salva CPF sem máscara
+                  const record = {
+                      apelido: formData.apelido.trim(),
+                      codSAP: formData.codSAP.trim(),
+                      cnpj: formData.cnpj.replace(/[^\d]/g, ''),
+                      nome: formData.nome.trim(),
+                      cpf: formData.cpf.replace(/[^\d]/g, '')
+                  };
+
                   if (isEditing) {
-                    const { error } = await supabase
-                      .from('terceiros')
-                      .update({ 
-                        apelido: formData.apelido.trim(), 
-                        codSAP: formData.codSAP.trim(), 
-                        cnpj: formData.cnpj.replace(/[^\d]/g, '') 
-                      })
-                      .eq('id', currentTerceiro.id);
+                    const { error } = await supabase.from('terceiros').update(record).eq('id', currentTerceiro.id);
                     if (error) throw error;
                     showToast("Terceiro atualizado com sucesso!", "success");
                   } else {
-                    const { error } = await supabase
-                      .from('terceiros')
-                      .insert([{
-                        ...formData,
-                        apelido: formData.apelido.trim(),
-                        codSAP: formData.codSAP.trim(),
-                        cnpj: formData.cnpj.replace(/[^\d]/g, ''),
-                        usuarioCriacao: userId
-                      }]);
+                    const { error } = await supabase.from('terceiros').insert([{ ...record, usuarioCriacao: userId }]);
                     if (error) throw error;
                     showToast("Terceiro cadastrado com sucesso!", "success");
                   }
@@ -725,14 +726,21 @@
                 }
                 setIsLoading(false);
               };
-          
+
               const handleEditClick = (terceiro) => {
                 setIsEditing(true);
                 setCurrentTerceiro(terceiro);
-                setFormData({ apelido: terceiro.apelido, codSAP: terceiro.codSAP, cnpj: terceiro.cnpj });
+                // ATUALIZADO: Carrega nome e cpf no formulário de edição
+                setFormData({
+                    apelido: terceiro.apelido || '',
+                    codSAP: terceiro.codSAP || '',
+                    cnpj: formatCNPJ(terceiro.cnpj) || '',
+                    nome: terceiro.nome || '',
+                    cpf: formatCPF(terceiro.cpf) || ''
+                });
                 setShowForm(true);
               };
-          
+
               const handleCancel = () => {
                 setShowForm(false);
                 setIsEditing(false);
@@ -759,13 +767,16 @@
                 setTerceiroToDelete(null);
                 setIsLoading(false);
               };
-          
+
+              // ATUALIZADO: Busca inclui nome e cpf
               const filteredList = terceirosList.filter(t =>
-                t.apelido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                t.codSAP.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                t.cnpj.toLowerCase().includes(searchTerm.toLowerCase())
+                (t.apelido && t.apelido.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (t.codSAP && t.codSAP.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (t.cnpj && t.cnpj.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (t.nome && t.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (t.cpf && t.cpf.toLowerCase().includes(searchTerm.toLowerCase()))
               );
-          
+
               return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                 React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Terceiros"),
                 !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
@@ -775,35 +786,42 @@
                   )
                 ),
                 showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-                  React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido", className: "p-2 border rounded" }),
-                  React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP", className: "p-2 border rounded" }),
-                  React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ", className: "p-2 border rounded" }),
+                  React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido*", className: "p-2 border rounded" }),
+                  React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
+                  React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
+                  // ATUALIZADO: Novos campos de input
+                  React.createElement('input', { name: "nome", value: formData.nome, onChange: handleInputChange, placeholder: "Nome", className: "p-2 border rounded" }),
+                  React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
                   React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
                     React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                     React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
                   )
                 ),
-                React.createElement('input', { type: "text", placeholder: "Buscar por Apelido, Código SAP ou CNPJ...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+                React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
                 React.createElement('div', { className: "overflow-x-auto" },
                   React.createElement('table', { className: "min-w-full bg-white text-sm" },
                     React.createElement('thead', { className: "bg-gray-100" },
                       React.createElement('tr', null,
+                        // ATUALIZADO: Novos cabeçalhos
                         React.createElement('th', { className: "p-2 text-left" }, "Apelido"),
+                        React.createElement('th', { className: "p-2 text-left" }, "Nome"),
                         React.createElement('th', { className: "p-2 text-left" }, "Código SAP"),
                         React.createElement('th', { className: "p-2 text-left" }, "CNPJ"),
-                        React.createElement('th', { className: "p-2 text-left" }, "Usuário Criação"),
+                        React.createElement('th', { className: "p-2 text-left" }, "CPF"),
                         React.createElement('th', { className: "p-2 text-right" }, "Ações")
                       )
                     ),
                     React.createElement('tbody', { className: "divide-y" },
-                      isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
-                      !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
+                      isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
+                      !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
                       filteredList.map(t =>
                         React.createElement('tr', { key: t.id, className: "hover:bg-gray-50" },
+                          // ATUALIZADO: Novas células
                           React.createElement('td', { className: "p-2" }, t.apelido),
+                          React.createElement('td', { className: "p-2" }, t.nome),
                           React.createElement('td', { className: "p-2" }, t.codSAP),
                           React.createElement('td', { className: "p-2" }, formatCNPJ(t.cnpj)),
-                          React.createElement('td', { className: "p-2" }, t.usuarioCriacao),
+                          React.createElement('td', { className: "p-2" }, formatCPF(t.cpf)),
                           React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
                             React.createElement('button', { onClick: () => handleEditClick(t), className: "text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit' })),
                             React.createElement('button', { onClick: () => confirmDelete(t), className: "text-red-600 p-1 hover:bg-red-100 rounded-full", title: "Excluir" }, React.createElement(LucideIcon, { name: 'Trash2' }))
@@ -2466,6 +2484,7 @@
     </script>
 </body>
 </html>
+
 
 
 
