@@ -860,9 +860,9 @@
                     try {
                         const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
                             supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
-                            // ATUALIZADO: Busca nome e cpf
                             supabase.from('terceiros').select('codSAP, apelido, cnpj, nome, cpf'),
-                            supabase.from('equipamentos').select('plate')
+                            // ATUALIZADO: Busca também o 'type' (tipo de implemento) dos equipamentos
+                            supabase.from('equipamentos').select('plate, type')
                         ]);
 
                         if (concessaoRes.error) throw concessaoRes.error;
@@ -872,16 +872,21 @@
                         setAllTerceiros(terceirosRes.data || []);
                         setAllPlates(equipamentosRes.data.map(e => e.plate) || []);
 
+                        // ATUALIZADO: Cria um mapa para os tipos de implemento para facilitar a busca
+                        const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
+                        
                         const terceirosMap = new Map(terceirosRes.data.map(t => [t.codSAP, t]));
                         const joinedData = concessaoRes.data.map(c => {
-                            // ATUALIZADO: Junta nome e cpf aos dados
                             const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome: 'N/A', cpf: 'N/A' };
+                            // ATUALIZADO: Busca o tipo de implemento no mapa e adiciona aos dados
+                            const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
                             return {
                                 ...c,
                                 apelido: terceiroInfo.apelido,
                                 cnpj: terceiroInfo.cnpj,
                                 nome: terceiroInfo.nome,
-                                cpf: terceiroInfo.cpf
+                                cpf: terceiroInfo.cpf,
+                                tipoImplemento: tipoImplemento // Novo campo adicionado
                             };
                         });
                         setConcessions(joinedData);
@@ -974,7 +979,6 @@
                     setIsLoading(false);
                 };
 
-                // ATUALIZADO: Busca inclui nome e cpf
                 const filteredList = concessions.filter(c => {
                     const search = searchTerm.toLowerCase();
                     return (
@@ -983,7 +987,9 @@
                         (c.placa && c.placa.toLowerCase().includes(search)) ||
                         (c.cnpj && c.cnpj.toLowerCase().includes(search)) ||
                         (c.nome && c.nome.toLowerCase().includes(search)) ||
-                        (c.cpf && c.cpf.toLowerCase().includes(search))
+                        (c.cpf && c.cpf.toLowerCase().includes(search)) ||
+                        // ATUALIZADO: Permite buscar pelo tipo de implemento
+                        (c.tipoImplemento && c.tipoImplemento.toLowerCase().includes(search))
                     );
                 });
 
@@ -1016,21 +1022,22 @@
                         React.createElement('table', { className: "min-w-full bg-white text-sm" },
                             React.createElement('thead', { className: "bg-gray-100" },
                                 React.createElement('tr', null,
-                                    // ATUALIZADO: Novos cabeçalhos
-                                    ["Apelido", "Nome", "Cód. SAP", "Placa", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
+                                    // ATUALIZADO: Adicionado novo cabeçalho para a coluna
+                                    ["Apelido", "Nome", "Cód. SAP", "Placa", "Tipo Implemento", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
                                     userRole === 'administrador' && React.createElement('th', { className: "p-2 text-right" }, "Ações")
                                 )
                             ),
                             React.createElement('tbody', { className: "divide-y" },
-                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 10 : 9, className: "p-4 text-center" }, "Carregando...")) :
-                                !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 10 : 9, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando...")) :
+                                !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
                                 filteredList.map(c =>
                                     React.createElement('tr', { key: c.id, className: "hover:bg-gray-50" },
-                                        // ATUALIZADO: Novas células
                                         React.createElement('td', { className: "p-2" }, c.apelido),
                                         React.createElement('td', { className: "p-2" }, c.nome),
                                         React.createElement('td', { className: "p-2" }, c.codSAP),
                                         React.createElement('td', { className: "p-2" }, c.placa),
+                                        // ATUALIZADO: Adicionada nova célula para exibir o tipo de implemento
+                                        React.createElement('td', { className: "p-2" }, c.tipoImplemento),
                                         React.createElement('td', { className: "p-2" }, formatCNPJ(c.cnpj)),
                                         React.createElement('td', { className: "p-2" }, formatCPF(c.cpf)),
                                         React.createElement('td', { className: "p-2" }, formatDate(c.data_inicio)),
@@ -2486,6 +2493,7 @@
     </script>
 </body>
 </html>
+
 
 
 
