@@ -85,6 +85,16 @@
             if (len <= 12) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`;
             return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12, 14)}`;
         }
+        function formatCPF(value) {
+            if (!value) return "";
+            const cpf = value.replace(/[^\d]/g, "").slice(0, 11);
+            const len = cpf.length;
+
+            if (len <= 3) return cpf;
+            if (len <= 6) return `${cpf.slice(0, 3)}.${cpf.slice(3)}`;
+            if (len <= 9) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6)}`;
+            return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
+        }
         function Toast({ message, type, onClose }) {
             const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
             const icon = type === 'success' ? '✔' : '✖';
@@ -2456,6 +2466,7 @@
     </script>
 </body>
 </html>
+
 
 
 
