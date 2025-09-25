@@ -2048,7 +2048,6 @@
                 const [hasSearched, setHasSearched] = React.useState(false);
                 const [terceirosMap, setTerceirosMap] = React.useState(new Map());
 
-                // Carrega os dados dos terceiros uma vez para consulta
                 React.useEffect(() => {
                     const fetchTerceiros = async () => {
                         try {
@@ -2100,6 +2099,21 @@
                     const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
                     return date.toLocaleDateString('pt-BR');
                 };
+                
+                // >>> NOVO: FUNÇÃO PARA CALCULAR OS DIAS <<<
+                const calculateDays = (startDateString, endDateString) => {
+                    if (!startDateString) return '—';
+
+                    const startDate = new Date(startDateString + 'T00:00:00');
+                    const endDate = endDateString ? new Date(endDateString + 'T00:00:00') : new Date();
+
+                    const diffTime = Math.abs(endDate - startDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    // Retorna 1 se for o mesmo dia, para contagem inclusiva.
+                    return diffDays === 0 ? 1 : diffDays;
+                };
+
 
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta de Histórico de Placas"),
@@ -2119,19 +2133,22 @@
                         React.createElement('table', { className: "min-w-full bg-white text-sm" },
                             React.createElement('thead', { className: "bg-gray-100" },
                                 React.createElement('tr', null,
-                                    ["Apelido", "Cód. SAP", "Data Início", "Data Fim", "Status"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
+                                    // >>> NOVO: CABEÇALHO DA COLUNA "PERÍODO" ADICIONADO <<<
+                                    ["Apelido", "Cód. SAP", "Data Início", "Data Fim", "Período (dias)", "Status"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
                                 )
                             ),
                             React.createElement('tbody', { className: "divide-y" },
-                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
-                                !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-gray-500" }, "Digite uma placa para buscar seu histórico.")) :
-                                historyResults.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Nenhum histórico encontrado para esta placa.")) :
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
+                                !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center text-gray-500" }, "Digite uma placa para buscar seu histórico.")) :
+                                historyResults.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhum histórico encontrado para esta placa.")) :
                                 historyResults.map((rec, index) =>
                                     React.createElement('tr', { key: rec.codSAP + rec.data_inicio + index, className: "hover:bg-gray-50" },
                                         React.createElement('td', { className: "p-2" }, rec.apelido),
                                         React.createElement('td', { className: "p-2" }, rec.codSAP),
                                         React.createElement('td', { className: "p-2" }, formatDate(rec.data_inicio)),
                                         React.createElement('td', { className: "p-2" }, formatDate(rec.data_fim)),
+                                        // >>> NOVO: CÉLULA COM O CÁLCULO DOS DIAS <<<
+                                        React.createElement('td', { className: "p-2" }, calculateDays(rec.data_inicio, rec.data_fim)),
                                         React.createElement('td', { className: `p-2 font-semibold ${!rec.data_fim ? 'text-green-600' : 'text-red-600'}` },
                                             !rec.data_fim ? 'Ativo' : 'Inativo'
                                         )
@@ -2437,6 +2454,7 @@
     </script>
 </body>
 </html>
+
 
 
 
