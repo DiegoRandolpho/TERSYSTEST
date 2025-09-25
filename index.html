@@ -700,7 +700,7 @@
                         ...formData,
                         apelido: formData.apelido.trim(),
                         codSAP: formData.codSAP.trim(),
-                        formData.cnpj.replace(/[^\d]/g, ''),
+                        cnpj: formData.cnpj.replace(/[^\d]/g, ''),
                         usuarioCriacao: userId
                       }]);
                     if (error) throw error;
@@ -2314,5 +2314,6 @@
     </script>
 </body>
 </html>
+
 
 
