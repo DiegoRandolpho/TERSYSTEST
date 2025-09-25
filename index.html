@@ -2197,50 +2197,80 @@
                 );
             }
             function ExpenseQuery({ userId, userRole, showToast }) {
+                // NOVO: Estados para o filtro de placa e para controlar se uma busca foi feita
                 const [periodo, setPeriodo] = React.useState('');
+                const [placa, setPlaca] = React.useState('');
                 const [expenses, setExpenses] = React.useState([]);
                 const [isLoading, setIsLoading] = React.useState(false);
                 const [isImporting, setIsImporting] = React.useState(false);
                 const [file, setFile] = React.useState(null);
+                const [hasSearched, setHasSearched] = React.useState(false);
 
-                // NOVO: Função para formatar o campo de período (MM/AAAA)
                 const formatPeriodo = (value) => {
                     const cleaned = ('' + value).replace(/[^\d]/g, '');
-                    const truncated = cleaned.slice(0, 6); // Limita a 6 dígitos (MMYYYY)
-                    
+                    const truncated = cleaned.slice(0, 6);
                     if (truncated.length > 2) {
                         return `${truncated.slice(0, 2)}/${truncated.slice(2)}`;
                     }
-                    
                     return truncated;
                 };
+                
+                // ATUALIZADO: Lógica de busca com paginação para quebrar o limite de 1000 linhas
+                const handleSearch = async () => {
+                    if (!periodo && !placa) {
+                        showToast("Informe um Período ou uma Placa para buscar.", "error");
+                        return;
+                    }
 
-                // Busca despesas no banco de dados quando o período muda
-                React.useEffect(() => {
-                    const fetchExpenses = async () => {
-                        if (periodo.match(/^\d{2}\/\d{4}$/)) { // Valida formato MM/YYYY
-                            setIsLoading(true);
-                            try {
-                                const { data, error } = await supabase
-                                    .from('despesas_manutencao')
-                                    .select('*')
-                                    .eq('periodo_referencia', periodo)
-                                    .order('placa');
-                                
-                                if (error) throw error;
-                                setExpenses(data || []);
-                            } catch (err) {
-                                showToast("Erro ao buscar despesas.", "error");
+                    setIsLoading(true);
+                    setHasSearched(true);
+                    setExpenses([]);
+
+                    let allResults = [];
+                    let page = 0;
+                    const pageSize = 1000; // O máximo que o Supabase permite por vez
+
+                    while (true) {
+                        const from = page * pageSize;
+                        const to = from + pageSize - 1;
+
+                        try {
+                            let query = supabase
+                                .from('despesas_manutencao')
+                                .select('*')
+                                .order('placa')
+                                .range(from, to);
+
+                            // Adiciona os filtros se eles foram preenchidos
+                            if (periodo) {
+                                query = query.eq('periodo_referencia', periodo);
                             }
-                            setIsLoading(false);
-                        } else {
-                            setExpenses([]);
-                        }
-                    };
+                            if (placa) {
+                                query = query.eq('placa', placa.trim().toUpperCase());
+                            }
+                            
+                            const { data, error } = await query;
+                            if (error) throw error;
 
-                    const timerId = setTimeout(() => fetchExpenses(), 500); // Espera o usuário parar de digitar
-                    return () => clearTimeout(timerId);
-                }, [periodo, showToast]);
+                            if (data) {
+                                allResults = [...allResults, ...data];
+                            }
+
+                            // Se o número de resultados for menor que o tamanho da página, chegamos ao fim
+                            if (!data || data.length < pageSize) {
+                                break;
+                            }
+
+                            page++; // Prepara para buscar a próxima página
+                        } catch (err) {
+                            showToast("Erro ao buscar despesas.", "error");
+                            break; // Sai do loop em caso de erro
+                        }
+                    }
+                    
+                    setExpenses(allResults);
+                    setIsLoading(false);
+                };
 
                 const handleFileChange = (e) => {
                     if (e.target.files && e.target.files[0]) {
@@ -2249,6 +2279,7 @@
                 };
 
                 const handleImport = () => {
+                    // ... (a lógica de importação permanece a mesma)
                     if (!file) {
                         showToast("Por favor, selecione um arquivo para importar.", "error");
                         return;
@@ -2257,7 +2288,6 @@
                         showToast("Por favor, insira um período de referência válido (MM/AAAA).", "error");
                         return;
                     }
-
                     setIsImporting(true);
                     const reader = new FileReader();
                     reader.onload = async (e) => {
@@ -2267,7 +2297,6 @@
                             const sheetName = workbook.SheetNames[0];
                             const worksheet = workbook.Sheets[sheetName];
                             const json = XLSX.utils.sheet_to_json(worksheet);
-
                             const dataToInsert = json
                                 .filter(row => row['Lançamento'] == 2)
                                 .map(row => ({
@@ -2277,23 +2306,17 @@
                                     pedido: row['Pedido'],
                                     descricao: row['Material']
                                 }));
-                            
                             if (dataToInsert.length === 0) {
                                 showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
                                 setIsImporting(false);
                                 return;
                             }
-
                             const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
                             if (error) throw error;
-
                             showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
                             setFile(null); 
                             document.getElementById('file-input').value = '';
-                            
-                            const { data: updatedData } = await supabase.from('despesas_manutencao').select('*').eq('periodo_referencia', periodo).order('placa');
-                            setExpenses(updatedData || []);
-
+                            handleSearch(); // ATUALIZADO: Atualiza a busca após importar
                         } catch (err) {
                             showToast(`Erro ao processar o arquivo: ${err.message}`, "error");
                         }
@@ -2305,18 +2328,27 @@
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
                     
-                    userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
-                        React.createElement('div', { className: "md:col-span-1" },
-                           React.createElement('label', { htmlFor: 'periodo', className: "block text-sm font-medium text-gray-700 mb-1" }, "Período de Referência (MM/AAAA)"),
-                           // ATUALIZADO: O 'onChange' agora usa a nova função de formatação
-                           React.createElement('input', { id: 'periodo', type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
+                    // ATUALIZADO: Seção de busca visível para Supervisor e Administrador
+                    React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Período (MM/AAAA)"),
+                            React.createElement('input', { type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
                         ),
-                        React.createElement('div', { className: "md:col-span-1" },
-                            React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha de Despesas"),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Placa"),
+                            React.createElement('input', { type: 'text', placeholder: "Ex: ABC1234", value: placa, onChange: e => setPlaca(e.target.value), className: "w-full p-2 border rounded" })
+                        ),
+                        React.createElement('button', { onClick: handleSearch, disabled: isLoading, className: "w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400" },
+                           isLoading ? 'Buscando...' : 'Buscar'
+                        )
+                    ),
+
+                    // ATUALIZADO: Seção de importação visível apenas para Administrador
+                    userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha para Importar"),
                             React.createElement('input', {
-                                id: 'file-input',
-                                type: "file",
-                                onChange: handleFileChange,
+                                id: 'file-input', type: "file", onChange: handleFileChange,
                                 className: "w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
                                 accept: ".xlsx, .xls"
                             })
@@ -2335,7 +2367,8 @@
                             ),
                             React.createElement('tbody', { className: "divide-y" },
                                 isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
-                                expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-gray-500" }, "Nenhuma despesa encontrada para o período informado.")) :
+                                !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-gray-500" }, "Informe um Período ou Placa para iniciar a busca.")) :
+                                expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
                                 expenses.map(exp =>
                                     React.createElement('tr', { key: exp.id, className: "hover:bg-gray-50" },
                                         React.createElement('td', { className: "p-2" }, exp.periodo_referencia),
@@ -2647,6 +2680,7 @@
     </script>
 </body>
 </html>
+
 
 
 
