@@ -2298,7 +2298,7 @@
                             const worksheet = workbook.Sheets[sheetName];
                             const json = XLSX.utils.sheet_to_json(worksheet);
                             const dataToInsert = json
-                                .filter(row => row['Lançamento'] == 2)
+                                .filter(row => row['Lancamento'] == 2)
                                 .map(row => ({
                                     periodo_referencia: periodo,
                                     placa: row['Placa'],
@@ -2680,6 +2680,7 @@
     </script>
 </body>
 </html>
+
 
 
 
