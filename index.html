@@ -2596,8 +2596,8 @@
                         case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
                         case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
                         case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
-                        case 'concessionManagement': return userRole === 'administrador' ?  React.createElement(ConcessionManagement, { userId, userRole, showToast });
-                        case 'contractManagement': return userRole === 'administrador' ?  React.createElement(ContractManagement, { userId, userRole, showToast });
+                        case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
+                        case 'contractManagement': return React.createElement(ContractManagement, { userId, userRole, showToast });
                         case 'plateHistory': return React.createElement(PlateHistory, { showToast });
                         case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
@@ -2680,29 +2680,6 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
