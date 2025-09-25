@@ -382,7 +382,6 @@
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
               const [editingEquipment, setEditingEquipment] = React.useState(null);
-              const [originalEquipment, setOriginalEquipment] = React.useState(null);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
               const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
@@ -391,7 +390,7 @@
                 const fetchEquipment = async () => {
                   setIsLoading(true);
                   try {
-                    const { data, error: fetchError } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                    const { data, error: fetchError } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                     if (fetchError) throw fetchError;
                     setEquipmentList(data);
                   } catch (err) {
@@ -413,7 +412,7 @@
                   await supabase.from('equipamentos').insert([{ plate: newPlate.trim(), model: newModel.trim(), brand: newBrand.trim(), chassis: newChassis.trim(), type: newEquipmentType, created_by_username: userId }]);
                   showToast("Equipamento adicionado com sucesso!", "success");
                   setNewPlate(''); setNewModel(''); setNewBrand(''); setNewChassis(''); setNewEquipmentType(''); setShowForm(false);
-                  const { data } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                  const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                   setEquipmentList(data);
                 } catch (err) {
                   showToast("Erro ao adicionar equipamento.", "error");
@@ -421,8 +420,8 @@
                 setIsLoading(false);
               };
 
-              const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); setOriginalEquipment({ ...eq }); };
-              const handleCancelEdit = () => { setEditingEquipment(null); setOriginalEquipment(null); };
+              const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); };
+              const handleCancelEdit = () => { setEditingEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
               
               const handleUpdateEquipment = async () => {
@@ -432,7 +431,7 @@
                   await supabase.from('equipamentos').update({ plate: editingEquipment.plate.trim(), model: editingEquipment.model.trim(), brand: editingEquipment.brand.trim(), chassis: editingEquipment.chassis.trim(), type: editingEquipment.type }).eq('id', editingEquipment.id);
                   showToast("Equipamento atualizado!", "success");
                   setEditingEquipment(null);
-                  const { data } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                  const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                   setEquipmentList(data);
                 } catch (err) {
                    showToast("Erro ao atualizar.", "error");
@@ -448,7 +447,7 @@
                 try {
                     await supabase.from('equipamentos').delete().eq('id', equipmentToDelete.id);
                     showToast("Equipamento excluído!", "success");
-                    const { data } = await supabase.from('equipamentos').select('*, model, brand, chassis').order('created_at', { ascending: false });
+                    const { data } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
                     setEquipmentList(data);
                 } catch(e) {
                     showToast("Erro ao excluir.", "error");
@@ -459,7 +458,7 @@
               };
 
               const filteredEquipmentList = equipmentList.filter(eq =>
-                  Object.values(eq).some(val => String(val).toLowerCase().includes(searchTerm.toLowerCase()))
+                  Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
 
               return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
@@ -481,28 +480,39 @@
                 ),
                 React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
                 React.createElement('div', { className: "overflow-x-auto" },
-                    React.createElement('table', { className: "min-w-full bg-white" },
-                        React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, React.createElement('th', {className: "p-2"}, "Placa"), React.createElement('th', {className: "p-2"}, "Tipo"), React.createElement('th', {className: "p-2 text-right"}, "Ações"))),
+                    React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                        React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, 
+                            React.createElement('th', {className: "p-2 text-left"}, "Placa"), 
+                            React.createElement('th', {className: "p-2 text-left"}, "Modelo"),
+                            React.createElement('th', {className: "p-2 text-left"}, "Marca"),
+                            React.createElement('th', {className: "p-2 text-left"}, "Chassi"),
+                            React.createElement('th', {className: "p-2 text-left"}, "Tipo"), 
+                            React.createElement('th', {className: "p-2 text-right"}, "Ações"))),
                         React.createElement('tbody', { className: "divide-y" },
                             filteredEquipmentList.map(eq => (
-                                editingEquipment && editingEquipment.id === eq.id ?
-                                React.createElement('tr', { key: eq.id },
-                                    React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full"})),
-                                    React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
-                                    React.createElement('td', { className: "p-2 text-right" },
-                                      React.createElement('div', {className: 'mb-2'}, React.createElement('input', {placeholder: "Modelo", value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full"})),
-                                      React.createElement('div', {className: 'mb-2'}, React.createElement('input', {placeholder: "Marca", value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full"})),
-                                      React.createElement('div', {className: 'mb-2'}, React.createElement('input', {placeholder: "Chassi", value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full"})),
-                                      React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2"}, React.createElement(LucideIcon, {name:'Save'})),
-                                      React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600"}, React.createElement(LucideIcon, {name:'Ban'}))
-                                    )
-                                ) :
-                                React.createElement('tr', { key: eq.id },
-                                    React.createElement('td', { className: "p-2" }, eq.plate),
-                                    React.createElement('td', { className: "p-2" }, eq.type),
-                                    React.createElement('td', { className: "p-2 text-right" },
-                                        React.createElement('button', {onClick: ()=>handleEditClick(eq), className:"text-blue-600 mr-2"}, React.createElement(LucideIcon, {name: 'Edit'})),
-                                        React.createElement('button', {onClick: ()=>confirmDeleteEquipment(eq), className:"text-red-600"}, React.createElement(LucideIcon, {name: 'Trash2'}))
+                                React.createElement('tr', { key: eq.id, className: "hover:bg-gray-50" },
+                                    editingEquipment && editingEquipment.id === eq.id ?
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
+                                        React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                          React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
+                                          React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
+                                        )
+                                    ) :
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "p-2" }, eq.plate),
+                                        React.createElement('td', { className: "p-2" }, eq.model),
+                                        React.createElement('td', { className: "p-2" }, eq.brand),
+                                        React.createElement('td', { className: "p-2" }, eq.chassis),
+                                        React.createElement('td', { className: "p-2" }, eq.type),
+                                        React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                            React.createElement('button', {onClick: ()=>handleEditClick(eq), className:"text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Edit'})),
+                                            React.createElement('button', {onClick: ()=>confirmDeleteEquipment(eq), className:"text-red-600 p-1 hover:bg-red-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Trash2'}))
+                                        )
                                     )
                                 )
                             ))
@@ -618,6 +628,614 @@
                 showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir usuário "${userToDelete?.username}"?`, onConfirm: handleDeleteUser, onCancel: () => setShowConfirmModal(false) })
               );
             }
+            
+            function ThirdPartyManagement({ userId, showToast }) {
+              const [terceirosList, setTerceirosList] = React.useState([]);
+              const [isLoading, setIsLoading] = React.useState(false);
+              const [showForm, setShowForm] = React.useState(false);
+              const [isEditing, setIsEditing] = React.useState(false);
+              const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
+              const initialFormState = { apelido: '', codSAP: '', cnpj: '' };
+              const [formData, setFormData] = React.useState(initialFormState);
+              const [searchTerm, setSearchTerm] = React.useState('');
+              const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+              const [terceiroToDelete, setTerceiroToDelete] = React.useState(null);
+          
+              const fetchTerceiros = React.useCallback(async () => {
+                setIsLoading(true);
+                try {
+                  const { data, error } = await supabase.from('terceiros').select('*').order('apelido', { ascending: true });
+                  if (error) throw error;
+                  setTerceirosList(data || []);
+                } catch (err) {
+                  showToast("Erro ao carregar terceiros.", "error");
+                }
+                setIsLoading(false);
+              }, [showToast]);
+          
+              React.useEffect(() => {
+                fetchTerceiros();
+              }, [fetchTerceiros]);
+          
+              const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({ ...prev, [name]: value }));
+              };
+          
+              const handleFormSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.apelido.trim() || !formData.codSAP.trim() || !formData.cnpj.trim()) {
+                  showToast("Por favor, preencha todos os campos.", "error");
+                  return;
+                }
+                setIsLoading(true);
+          
+                try {
+                  if (isEditing) {
+                    const { error } = await supabase
+                      .from('terceiros')
+                      .update({ 
+                        apelido: formData.apelido.trim(), 
+                        codSAP: formData.codSAP.trim(), 
+                        cnpj: formData.cnpj.trim() 
+                      })
+                      .eq('id', currentTerceiro.id);
+                    if (error) throw error;
+                    showToast("Terceiro atualizado com sucesso!", "success");
+                  } else {
+                    const { error } = await supabase
+                      .from('terceiros')
+                      .insert([{
+                        ...formData,
+                        apelido: formData.apelido.trim(),
+                        codSAP: formData.codSAP.trim(),
+                        cnpj: formData.cnpj.trim(),
+                        usuarioCriacao: userId
+                      }]);
+                    if (error) throw error;
+                    showToast("Terceiro cadastrado com sucesso!", "success");
+                  }
+                  setShowForm(false);
+                  setIsEditing(false);
+                  setFormData(initialFormState);
+                  fetchTerceiros();
+                } catch (err) {
+                  showToast(`Erro ao salvar terceiro: ${err.message}`, "error");
+                }
+                setIsLoading(false);
+              };
+          
+              const handleEditClick = (terceiro) => {
+                setIsEditing(true);
+                setCurrentTerceiro(terceiro);
+                setFormData({ apelido: terceiro.apelido, codSAP: terceiro.codSAP, cnpj: terceiro.cnpj });
+                setShowForm(true);
+              };
+          
+              const handleCancel = () => {
+                setShowForm(false);
+                setIsEditing(false);
+                setFormData(initialFormState);
+              };
+          
+              const confirmDelete = (terceiro) => {
+                setTerceiroToDelete(terceiro);
+                setShowConfirmModal(true);
+              };
+          
+              const handleDelete = async () => {
+                if (!terceiroToDelete) return;
+                setIsLoading(true);
+                try {
+                  const { error } = await supabase.from('terceiros').delete().eq('id', terceiroToDelete.id);
+                  if (error) throw error;
+                  showToast("Terceiro excluído com sucesso!", "success");
+                  fetchTerceiros();
+                } catch (err) {
+                  showToast("Erro ao excluir terceiro.", "error");
+                }
+                setShowConfirmModal(false);
+                setTerceiroToDelete(null);
+                setIsLoading(false);
+              };
+          
+              const filteredList = terceirosList.filter(t =>
+                t.apelido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                t.codSAP.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                t.cnpj.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+          
+              return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Terceiros"),
+                !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+                  React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
+                    React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
+                    "Cadastrar Novo Terceiro"
+                  )
+                ),
+                showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                  React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido", className: "p-2 border rounded" }),
+                  React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP", className: "p-2 border rounded" }),
+                  React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ", className: "p-2 border rounded" }),
+                  React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
+                    React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                    React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+                  )
+                ),
+                React.createElement('input', { type: "text", placeholder: "Buscar por Apelido, Código SAP ou CNPJ...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+                React.createElement('div', { className: "overflow-x-auto" },
+                  React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                    React.createElement('thead', { className: "bg-gray-100" },
+                      React.createElement('tr', null,
+                        React.createElement('th', { className: "p-2 text-left" }, "Apelido"),
+                        React.createElement('th', { className: "p-2 text-left" }, "Código SAP"),
+                        React.createElement('th', { className: "p-2 text-left" }, "CNPJ"),
+                        React.createElement('th', { className: "p-2 text-left" }, "Usuário Criação"),
+                        React.createElement('th', { className: "p-2 text-right" }, "Ações")
+                      )
+                    ),
+                    React.createElement('tbody', { className: "divide-y" },
+                      isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
+                      !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
+                      filteredList.map(t =>
+                        React.createElement('tr', { key: t.id, className: "hover:bg-gray-50" },
+                          React.createElement('td', { className: "p-2" }, t.apelido),
+                          React.createElement('td', { className: "p-2" }, t.codSAP),
+                          React.createElement('td', { className: "p-2" }, t.cnpj),
+                          React.createElement('td', { className: "p-2" }, t.usuarioCriacao),
+                          React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                            React.createElement('button', { onClick: () => handleEditClick(t), className: "text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit' })),
+                            React.createElement('button', { onClick: () => confirmDelete(t), className: "text-red-600 p-1 hover:bg-red-100 rounded-full", title: "Excluir" }, React.createElement(LucideIcon, { name: 'Trash2' }))
+                          )
+                        )
+                      )
+                    )
+                  )
+                ),
+                showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
+              );
+            }
+
+            function ConcessionManagement({ userId, userRole, showToast }) {
+                const [concessions, setConcessions] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [showForm, setShowForm] = React.useState(false);
+                const [isEditing, setIsEditing] = React.useState(false);
+                const [currentConcession, setCurrentConcession] = React.useState(null);
+                const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '' };
+                const [formData, setFormData] = React.useState(initialFormState);
+                
+                const [allPlates, setAllPlates] = React.useState([]);
+                const [allTerceiros, setAllTerceiros] = React.useState([]);
+
+                const [searchTerm, setSearchTerm] = React.useState('');
+                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+                const [concessionToEnd, setConcessionToEnd] = React.useState(null);
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return '—';
+                    const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
+                    return date.toLocaleDateString('pt-BR');
+                };
+
+                const fetchAllData = React.useCallback(async () => {
+                    setIsLoading(true);
+                    try {
+                        const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
+                            supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
+                            supabase.from('terceiros').select('codSAP, apelido, cnpj'),
+                            supabase.from('equipamentos').select('plate')
+                        ]);
+
+                        if (concessaoRes.error) throw concessaoRes.error;
+                        if (terceirosRes.error) throw terceirosRes.error;
+                        if (equipamentosRes.error) throw equipamentosRes.error;
+
+                        setAllTerceiros(terceirosRes.data || []);
+                        setAllPlates(equipamentosRes.data.map(e => e.plate) || []);
+
+                        const terceirosMap = new Map(terceirosRes.data.map(t => [t.codSAP, t]));
+                        
+                        const joinedData = concessaoRes.data.map(c => {
+                            const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A' };
+                            return {
+                                ...c,
+                                apelido: terceiroInfo.apelido,
+                                cnpj: terceiroInfo.cnpj,
+                            };
+                        });
+
+                        setConcessions(joinedData);
+
+                    } catch (err) {
+                        showToast("Erro ao carregar dados de concessão.", "error");
+                        console.error(err);
+                    }
+                    setIsLoading(false);
+                }, [showToast]);
+
+                React.useEffect(() => {
+                    fetchAllData();
+                }, [fetchAllData]);
+
+                const handleInputChange = (e) => {
+                    const { name, value } = e.target;
+                    setFormData(prev => ({ ...prev, [name]: value }));
+                };
+
+                const handleFormSubmit = async (e) => {
+                    e.preventDefault();
+                    if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
+                        showToast("Por favor, preencha todos os campos obrigatórios.", "error");
+                        return;
+                    }
+                    setIsLoading(true);
+
+                    try {
+                        const record = {
+                            placa: formData.placa,
+                            codSAP: formData.codSAP,
+                            valorfixo: parseFloat(formData.valorfixo),
+                            data_inicio: formData.data_inicio,
+                        };
+
+                        if (isEditing) {
+                            const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
+                            if (error) throw error;
+                            showToast("Concessão atualizada com sucesso!", "success");
+                        } else {
+                            const { error } = await supabase.from('concessao').insert([record]);
+                            if (error) throw error;
+                            showToast("Concessão criada com sucesso!", "success");
+                        }
+                        setShowForm(false);
+                        setIsEditing(false);
+                        setFormData(initialFormState);
+                        fetchAllData();
+                    } catch (err) {
+                        showToast(`Erro ao salvar concessão: ${err.message}`, "error");
+                    }
+                    setIsLoading(false);
+                };
+
+                const handleEditClick = (concession) => {
+                    setIsEditing(true);
+                    setCurrentConcession(concession);
+                    setFormData({
+                        placa: concession.placa,
+                        codSAP: concession.codSAP,
+                        valorfixo: concession.valorfixo,
+                        data_inicio: new Date(concession.data_inicio).toISOString().split('T')[0]
+                    });
+                    setShowForm(true);
+                };
+                
+                const handleCancel = () => {
+                    setShowForm(false);
+                    setIsEditing(false);
+                    setFormData(initialFormState);
+                };
+
+                const confirmEndConcession = (concession) => {
+                    setConcessionToEnd(concession);
+                    setShowConfirmModal(true);
+                };
+                
+                const handleEndConcession = async () => {
+                    if (!concessionToEnd) return;
+                    setIsLoading(true);
+                    try {
+                        const { error } = await supabase
+                            .from('concessao')
+                            .update({ data_fim: new Date().toISOString() })
+                            .eq('id', concessionToEnd.id);
+                        if (error) throw error;
+                        showToast("Concessão encerrada com sucesso!", "success");
+                        fetchAllData();
+                    } catch (err) {
+                        showToast("Erro ao encerrar concessão.", "error");
+                    }
+                    setShowConfirmModal(false);
+                    setConcessionToEnd(null);
+                    setIsLoading(false);
+                };
+
+                const filteredList = concessions.filter(c => {
+                    const search = searchTerm.toLowerCase();
+                    return (
+                        (c.apelido && c.apelido.toLowerCase().includes(search)) ||
+                        (c.codSAP && c.codSAP.toLowerCase().includes(search)) ||
+                        (c.placa && c.placa.toLowerCase().includes(search)) ||
+                        (c.cnpj && c.cnpj.toLowerCase().includes(search))
+                    );
+                });
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
+                    userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+                        React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
+                            React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
+                            "Nova Concessão"
+                        )
+                    ),
+                    showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('select', { name: "placa", value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded" },
+                            React.createElement('option', { value: "" }, "Selecione a Placa"),
+                            allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                        ),
+                        React.createElement('select', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded" },
+                            React.createElement('option', { value: "" }, "Selecione o Terceiro"),
+                            allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+                        ),
+                        React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded" }),
+                        React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded" }),
+                        React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
+                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+                        )
+                    ),
+                    React.createElement('input', { type: "text", placeholder: "Buscar por Apelido, Placa, CNPJ...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+                    React.createElement('div', { className: "overflow-x-auto" },
+                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                            React.createElement('thead', { className: "bg-gray-100" },
+                                React.createElement('tr', null,
+                                    ["Apelido", "Cód. SAP", "Placa", "CNPJ", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
+                                    userRole === 'administrador' && React.createElement('th', { className: "p-2 text-right" }, "Ações")
+                                )
+                            ),
+                            React.createElement('tbody', { className: "divide-y" },
+                                isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 8 : 7, className: "p-4 text-center" }, "Carregando...")) :
+                                !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 8 : 7, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
+                                filteredList.map(c =>
+                                    React.createElement('tr', { key: c.id, className: "hover:bg-gray-50" },
+                                        React.createElement('td', { className: "p-2" }, c.apelido),
+                                        React.createElement('td', { className: "p-2" }, c.codSAP),
+                                        React.createElement('td', { className: "p-2" }, c.placa),
+                                        React.createElement('td', { className: "p-2" }, c.cnpj),
+                                        React.createElement('td', { className: "p-2" }, formatDate(c.data_inicio)),
+                                        React.createElement('td', { className: "p-2" }, formatDate(c.data_fim)),
+                                        React.createElement('td', { className: "p-2" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
+                                        userRole === 'administrador' && React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                            c.data_fim ? 
+                                                React.createElement('span', { className: "text-gray-400 italic" }, "Encerrada") :
+                                                React.createElement(React.Fragment, null,
+                                                    React.createElement('button', { onClick: () => handleEditClick(c), className: "text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit' })),
+                                                    React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-red-600 p-1 hover:bg-red-100 rounded-full", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban' }))
+                                                )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
+                );
+            }
+
+            // COMPONENTE ATUALIZADO: ContractManagement
+            function ContractManagement({ userId, userRole, showToast }) {
+                const [category, setCategory] = React.useState('Contratação');
+                const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
+                const [formData, setFormData] = React.useState(initialFormState);
+                
+                const [terceiros, setTerceiros] = React.useState([]);
+                const [allPlates, setAllPlates] = React.useState([]);
+                const [activeConcessions, setActiveConcessions] = React.useState([]);
+                const [history, setHistory] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+
+                const fetchInitialData = React.useCallback(async () => {
+                    setIsLoading(true);
+                    try {
+                        const [terceirosRes, platesRes, historyRes] = await Promise.all([
+                            supabase.from('terceiros').select('codSAP, apelido'),
+                            supabase.from('equipamentos').select('plate'),
+                            supabase.from('contrato_distrato').select('*').order('data_alteracao', { ascending: false })
+                        ]);
+                        if (terceirosRes.error) throw terceirosRes.error;
+                        if (platesRes.error) throw platesRes.error;
+                        if (historyRes.error) throw historyRes.error;
+                        setTerceiros(terceirosRes.data);
+                        setAllPlates(platesRes.data.map(p => p.plate));
+                        setHistory(historyRes.data);
+                    } catch (err) {
+                        showToast("Erro ao carregar dados iniciais.", "error");
+                    }
+                    setIsLoading(false);
+                }, [showToast]);
+
+                React.useEffect(() => {
+                    fetchInitialData();
+                }, [fetchInitialData]);
+
+                React.useEffect(() => {
+                    const fetchActiveConcessions = async () => {
+                        if (category === 'Troca de Placa' && formData.codSAP) {
+                            setIsLoading(true);
+                            const { data, error } = await supabase
+                                .from('concessao')
+                                .select('placa')
+                                .eq('codSAP', formData.codSAP)
+                                .is('data_fim', null);
+                            
+                            if (error) {
+                                showToast("Erro ao buscar concessões ativas.", "error");
+                            } else {
+                                setActiveConcessions(data.map(c => c.placa));
+                            }
+                            setIsLoading(false);
+                        } else {
+                            setActiveConcessions([]);
+                        }
+                    };
+                    fetchActiveConcessions();
+                }, [formData.codSAP, category, showToast]);
+
+                const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+                
+                const handleFormSubmit = async (e) => {
+                    e.preventDefault();
+                    setIsLoading(true);
+                    
+                    try {
+                        // Inserir em contrato_distrato primeiro
+                        const contractData = {
+                            data_alteracao: formData.data_alteracao,
+                            codSAP: formData.codSAP,
+                            categoria: category,
+                            atraso: parseInt(formData.atraso, 10) || 0,
+                        };
+                        const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
+                        if (contractError) throw contractError;
+                        
+                        // Lógica específica da categoria
+                        switch (category) {
+                            case 'Contratação':
+                                const { error: hireError } = await supabase.from('concessao').insert([{
+                                    codSAP: formData.codSAP,
+                                    placa: formData.placa,
+                                    valorfixo: parseFloat(formData.valorfixo),
+                                    data_inicio: formData.data_alteracao
+                                }]);
+                                if (hireError) throw hireError;
+                                break;
+
+                            case 'Troca de Placa':
+                                const endDate = new Date(formData.data_alteracao);
+                                endDate.setDate(endDate.getDate() - 1);
+
+                                const { error: endError } = await supabase
+                                    .from('concessao')
+                                    .update({ data_fim: endDate.toISOString().split('T')[0] })
+                                    .eq('codSAP', formData.codSAP)
+                                    .eq('placa', formData.placa_antiga)
+                                    .is('data_fim', null);
+                                if (endError) throw endError;
+
+                                const { error: newPlateError } = await supabase.from('concessao').insert([{
+                                    codSAP: formData.codSAP,
+                                    placa: formData.placa,
+                                    valorfixo: parseFloat(formData.valorfixo),
+                                    data_inicio: formData.data_alteracao
+                                }]);
+                                if (newPlateError) throw newPlateError;
+                                break;
+                            
+                            case 'Encerramento':
+                                const { error: terminateError } = await supabase
+                                    .from('concessao')
+                                    .update({ data_fim: formData.data_alteracao })
+                                    .eq('codSAP', formData.codSAP)
+                                    .is('data_fim', null);
+                                if (terminateError) throw terminateError;
+                                break;
+                        }
+                        
+                        showToast(`Operação de ${category} registrada com sucesso!`, 'success');
+                        setFormData(initialFormState);
+                        fetchInitialData(); // Refresh history
+                        
+                    } catch (err) {
+                        showToast(`Erro na operação: ${err.message}`, 'error');
+                    }
+                    setIsLoading(false);
+                };
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return '—';
+                    // Garante que a data seja tratada como UTC para evitar problemas de fuso horário
+                    const date = new Date(dateString);
+                    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                    return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
+                };
+
+
+                const renderFormFields = () => {
+                    const commonFields = [
+                        React.createElement('select', { key: 'codSAP', name: 'codSAP', value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                            React.createElement('option', { value: '' }, "Selecione o Terceiro"),
+                            terceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+                        ),
+                        React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
+                        React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
+                    ];
+
+                    switch (category) {
+                        case 'Contratação':
+                            return [
+                                ...commonFields,
+                                React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                                    React.createElement('option', { value: '' }, "Selecione a Placa"),
+                                    allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                                ),
+                                React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                            ];
+                        case 'Troca de Placa':
+                            return [
+                                ...commonFields,
+                                React.createElement('select', { key: 'placa_antiga', name: 'placa_antiga', value: formData.placa_antiga, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                                    React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa Antiga" : "Nenhuma placa ativa"),
+                                    activeConcessions.map(p => React.createElement('option', { key: p, value: p }, p))
+                                ),
+                                React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                                    React.createElement('option', { value: '' }, "Selecione a Nova Placa"),
+                                    allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                                ),
+                                React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
+                            ];
+                        case 'Encerramento':
+                            return commonFields;
+                        default:
+                            return [];
+                    }
+                };
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
+                    
+                    React.createElement('div', { className: "mb-6" },
+                        React.createElement('div', { className: "flex justify-center border-b" },
+                            ['Contratação', 'Troca de Placa', 'Encerramento'].map(cat => (
+                                React.createElement('button', {
+                                    key: cat,
+                                    onClick: () => { setCategory(cat); setFormData(initialFormState); },
+                                    className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+                                }, cat)
+                            ))
+                        )
+                    ),
+                    
+                    React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
+                        renderFormFields(),
+                        React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
+                            React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition", disabled: isLoading },
+                                isLoading ? 'Processando...' : 'Executar Operação'
+                            )
+                        )
+                    ),
+                    
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
+                    React.createElement('div', { className: "overflow-x-auto" },
+                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                            React.createElement('thead', { className: "bg-gray-100" },
+                                React.createElement('tr', null,
+                                    ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
+                                )
+                            ),
+                            React.createElement('tbody', { className: "divide-y" },
+                                isLoading && history.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
+                                history.map(rec => React.createElement('tr', { key: rec.id },
+                                    React.createElement('td', { className: "p-2" }, formatDate(rec.data_alteracao)),
+                                    React.createElement('td', { className: "p-2" }, rec.codSAP),
+                                    React.createElement('td', { className: "p-2" }, rec.categoria),
+                                    React.createElement('td', { className: "p-2" }, rec.atraso)
+                                ))
+                            )
+                        )
+                    )
+                );
+            }
+
 
             function BranchTransfer({ userId, setCurrentPage, showToast }) {
               const [plate, setPlate] = React.useState('');
@@ -879,36 +1497,83 @@
             function Displacements({ userId, userRole, showToast }) {
                 const [displacements, setDisplacements] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(true);
+                const [isLoading, setIsLoading] = React.useState(false);
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentDisplacement, setCurrentDisplacement] = React.useState(null);
                 const initialFormState = { tipo_de_implemento: '', filial_origem: '', filial_destino: '', km: '', valor: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
+
                 const [searchTerm, setSearchTerm] = React.useState('');
+                const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
                 const [originFilter, setOriginFilter] = React.useState('all');
                 const [destinationFilter, setDestinationFilter] = React.useState('all');
+                const [hasSearched, setHasSearched] = React.useState(false);
                 
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
 
                 React.useEffect(() => {
-                    const fetchData = async () => {
-                        setIsLoading(true);
+                    const fetchBranches = async () => {
                         try {
-                            const { data: dData } = await supabase.from('deslocamentos').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
-                            // ADICIONADO PARA DEBUG
-                            console.log("1. Dados recebidos do Supabase:", dData);
-                            setDisplacements(dData);
-                            
                             const { data: bData } = await supabase.from('filiais').select('name').order('name');
                             setBranches(bData.map(b => b.name));
                         } catch (err) {
-                            showToast("Erro ao carregar dados.", "error");
+                            showToast("Erro ao carregar lista de filiais.", "error");
+                        }
+                    };
+                    fetchBranches();
+                }, [showToast]);
+
+                React.useEffect(() => {
+                    const timerId = setTimeout(() => {
+                        setDebouncedSearchTerm(searchTerm);
+                    }, 500);
+
+                    return () => {
+                        clearTimeout(timerId);
+                    };
+                }, [searchTerm]);
+
+                React.useEffect(() => {
+                    const fetchFilteredData = async () => {
+                        if (debouncedSearchTerm === '' && originFilter === 'all' && destinationFilter === 'all') {
+                            setDisplacements([]);
+                            setHasSearched(false);
+                            return;
+                        }
+                        
+                        setHasSearched(true);
+                        setIsLoading(true);
+                        
+                        try {
+                            let query = supabase
+                                .from('deslocamentos')
+                                .select('*')
+                                .is('data_encerramento', null)
+                                .order('data_criacao', { ascending: false });
+
+                            if (debouncedSearchTerm) {
+                                query = query.ilike('tipo_de_implemento', `%${debouncedSearchTerm}%`);
+                            }
+                            if (originFilter !== 'all') {
+                                query = query.eq('filial_origem', originFilter);
+                            }
+                            if (destinationFilter !== 'all') {
+                                query = query.eq('filial_destino', destinationFilter);
+                            }
+
+                            const { data, error } = await query;
+                            if (error) throw error;
+                            
+                            setDisplacements(data || []);
+                        } catch (err) {
+                            showToast("Erro ao buscar deslocamentos.", "error");
                         }
                         setIsLoading(false);
                     };
-                    fetchData();
-                }, [showToast]);
+                    
+                    fetchFilteredData();
+                }, [debouncedSearchTerm, originFilter, destinationFilter, showToast]);
 
                 const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
                 
@@ -921,9 +1586,12 @@
                         }
                         await supabase.from('deslocamentos').insert([{ ...formData, km: parseFloat(formData.km), valor: parseFloat(formData.valor) }]);
                         showToast(`Registro ${isEditing ? 'atualizado' : 'criado'}!`, "success");
-                        setShowForm(false); setIsEditing(false); setFormData(initialFormState);
-                        const { data } = await supabase.from('deslocamentos').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
-                        setDisplacements(data);
+                        setShowForm(false); 
+                        setIsEditing(false); 
+                        setFormData(initialFormState);
+                        setSearchTerm('');
+                        setOriginFilter('all');
+                        setDestinationFilter('all');
                     } catch (err) {
                         showToast("Falha ao salvar.", "error");
                     }
@@ -938,19 +1606,6 @@
                 };
 
                 const handleCancel = () => { setShowForm(false); setIsEditing(false); setFormData(initialFormState); };
-
-                // ADICIONADO PARA DEBUG
-                console.log("2. Valores atuais dos filtros:", {searchTerm, originFilter, destinationFilter});
-
-                const filteredDisplacements = displacements.filter(d => {
-                    const searchTermMatch = d.tipo_de_implemento && d.tipo_de_implemento.toLowerCase().includes(searchTerm.toLowerCase());
-                    const originMatch = originFilter === 'all' || d.filial_origem === originFilter;
-                    const destinationMatch = destinationFilter === 'all' || d.filial_destino === destinationFilter;
-                    return searchTermMatch && originMatch && destinationMatch;
-                });
-
-                // ADICIONADO PARA DEBUG
-                console.log("3. Dados após aplicação do filtro:", filteredDisplacements);
 
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
@@ -993,8 +1648,9 @@
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Tipo", "Origem", "Destino", "KM", "Valor", "Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center"}, "Carregando...")) : 
-                                filteredDisplacements.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
-                                filteredDisplacements.map(d => React.createElement('tr', {key:d.id},
+                                !hasSearched ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center text-gray-500"}, "Utilize os filtros acima para buscar os deslocamentos.")) :
+                                displacements.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:7, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado para os filtros aplicados.")) :
+                                displacements.map(d => React.createElement('tr', {key:d.id},
                                     React.createElement('td',{className:"p-2"}, d.tipo_de_implemento),
                                     React.createElement('td',{className:"p-2"}, d.filial_origem),
                                     React.createElement('td',{className:"p-2"}, d.filial_destino),
@@ -1011,7 +1667,7 @@
             function AdditionalCities({ userId, userRole, showToast }) {
                 const [records, setRecords] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(true);
+                const [isLoading, setIsLoading] = React.useState(false);
                 const [showForm, setShowForm] = React.useState(false);
                 const [isEditing, setIsEditing] = React.useState(false);
                 const [currentRecord, setCurrentRecord] = React.useState(null);
@@ -1019,33 +1675,72 @@
                 const [formData, setFormData] = React.useState(initialFormState);
                 
                 const [searchTerm, setSearchTerm] = React.useState('');
+                const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState(searchTerm);
                 const [branchFilter, setBranchFilter] = React.useState('all');
+                const [hasSearched, setHasSearched] = React.useState(false);
 
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
+            
+                React.useEffect(() => {
+                    const fetchBranches = async () => {
+                        try {
+                            const { data: bData } = await supabase.from('filiais').select('name').order('name');
+                            setBranches(bData.map(b => b.name) || []);
+                        } catch (err) {
+                            showToast("Erro ao carregar lista de filiais.", "error");
+                        }
+                    };
+                    fetchBranches();
+                }, [showToast]);
 
                 React.useEffect(() => {
-                    const fetchData = async () => {
+                    const timerId = setTimeout(() => {
+                        setDebouncedSearchTerm(searchTerm);
+                    }, 500);
+
+                    return () => {
+                        clearTimeout(timerId);
+                    };
+                }, [searchTerm]);
+
+                React.useEffect(() => {
+                    const fetchFilteredData = async () => {
+                        if (debouncedSearchTerm === '' && branchFilter === 'all') {
+                            setRecords([]);
+                            setHasSearched(false);
+                            return;
+                        }
+                        
+                        setHasSearched(true);
                         setIsLoading(true);
+                        
                         try {
-                            const { data: recordsData, error: recordsError } = await supabase
+                            let query = supabase
                                 .from('adicionais_cidades')
                                 .select('*')
                                 .is('data_encerramento', null)
                                 .order('data_criacao', { ascending: false });
-                            if (recordsError) throw recordsError;
-                            setRecords(recordsData || []);
-            
-                            const { data: bData, error: branchError } = await supabase.from('filiais').select('name').order('name');
-                            if (branchError) throw branchError;
-                            setBranches(bData.map(b => b.name) || []);
+
+                            if (debouncedSearchTerm) {
+                                query = query.ilike('cidade', `%${debouncedSearchTerm}%`);
+                            }
+                            if (branchFilter !== 'all') {
+                                query = query.eq('filial', branchFilter);
+                            }
+
+                            const { data, error } = await query;
+                            if (error) throw error;
+                            
+                            setRecords(data || []);
                         } catch (err) {
-                            showToast("Erro ao carregar dados de adicionais de cidades.", "error");
+                            showToast("Erro ao buscar adicionais de cidades.", "error");
                         }
                         setIsLoading(false);
                     };
-                    fetchData();
-                }, [showToast]);
-            
+                    
+                    fetchFilteredData();
+                }, [debouncedSearchTerm, branchFilter, showToast]);
+
                 const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
                 
                 const handleFormSubmit = async (e) => {
@@ -1080,8 +1775,8 @@
                         setShowForm(false); 
                         setIsEditing(false); 
                         setFormData(initialFormState);
-                        const { data } = await supabase.from('adicionais_cidades').select('*').is('data_encerramento', null).order('data_criacao', { ascending: false });
-                        setRecords(data || []);
+                        setSearchTerm('');
+                        setBranchFilter('all');
                     } catch (err) {
                         console.error("Erro ao salvar registro:", err);
                         showToast("Falha ao salvar o registro.", "error");
@@ -1106,12 +1801,6 @@
                     setIsEditing(false); 
                     setFormData(initialFormState); 
                 };
-
-                const filteredRecords = records.filter(r => {
-                    const searchTermMatch = r.cidade && r.cidade.toLowerCase().includes(searchTerm.toLowerCase());
-                    const branchMatch = branchFilter === 'all' || r.filial === branchFilter;
-                    return searchTermMatch && branchMatch;
-                });
             
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
@@ -1149,8 +1838,9 @@
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Cidade", "KM", "Valor", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center"}, "Carregando...")) : 
-                                filteredRecords.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
-                                filteredRecords.map(r => React.createElement('tr', {key:r.id},
+                                !hasSearched ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Utilize os filtros acima para buscar.")) :
+                                records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado para os filtros aplicados.")) :
+                                records.map(r => React.createElement('tr', {key:r.id},
                                     React.createElement('td',{className:"p-2"}, r.filial),
                                     React.createElement('td',{className:"p-2"}, r.cidade),
                                     React.createElement('td',{className:"p-2"}, r.km),
@@ -1172,10 +1862,13 @@
                 const [currentRecord, setCurrentRecord] = React.useState(null);
                 const initialFormState = { tipo_de_implemento: '', filial: '', preco: '' };
                 const [formData, setFormData] = React.useState(initialFormState);
-                const implementTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
+                const implementTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA", "TODOS"];
+
+                const [searchTerm, setSearchTerm] = React.useState('');
+                const [branchFilter, setBranchFilter] = React.useState('all');
 
                 const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '';
-
+            
                 React.useEffect(() => {
                     const fetchData = async () => {
                         setIsLoading(true);
@@ -1223,9 +1916,7 @@
                             filial: formData.filial,
                             preco: parseFloat(formData.preco)
                         };
-                        const { error: insertError } = await supabase
-                            .from('precos_fixos')
-                            .insert([newRecord]);
+                        const { error: insertError } = await supabase.from('precos_fixos').insert([newRecord]);
                         if (insertError) throw insertError;
             
                         showToast(`Registro ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, "success");
@@ -1242,7 +1933,7 @@
                 };
             
                 const handleEditClick = (record) => {
-                    setIsEditing(true);
+                    setIsEditing(true); 
                     setCurrentRecord(record);
                     setFormData({
                         tipo_de_implemento: record.tipo_de_implemento,
@@ -1253,10 +1944,16 @@
                 };
             
                 const handleCancel = () => { 
-                    setShowForm(false);
+                    setShowForm(false); 
                     setIsEditing(false); 
                     setFormData(initialFormState); 
                 };
+
+                const filteredRecords = records.filter(r => {
+                    const searchTermMatch = searchTerm === '' || (r.tipo_de_implemento && r.tipo_de_implemento.toLowerCase().includes(searchTerm.toLowerCase()));
+                    const branchMatch = branchFilter === 'all' || r.filial === branchFilter || r.filial === 'Todas';
+                    return searchTermMatch && branchMatch;
+                });
 
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('div', { className: "flex justify-between items-center mb-6" },
@@ -1268,11 +1965,12 @@
                     ),
                     showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                         React.createElement('select', { name: "tipo_de_implemento", value: formData.tipo_de_implemento, onChange: handleInputChange, required: true, className:"p-2 border rounded" },
-                            React.createElement('option', {value: ""}, "Selecione o Implemento"), 
+                             React.createElement('option', {value: ""}, "Selecione o Implemento"), 
                              implementTypes.map(type => React.createElement('option', {key: type, value: type}, type))
                         ),
                         React.createElement('select', { name: "filial", value: formData.filial, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, 
                             React.createElement('option', {value: ""}, "Selecione a Filial"), 
+                            React.createElement('option', {value: "Todas"}, "Todas"),
                             branches.map(b => React.createElement('option',{key:b, value:b},b))
                         ),
                         React.createElement('input', { type: "number", name: "preco", value: formData.preco, onChange: handleInputChange, placeholder:"Preço", required: true, step: "0.01", className:"p-2 border rounded" }),
@@ -1281,13 +1979,26 @@
                             React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, isEditing ? "Salvar Alterações" : "Salvar")
                         )
                     ),
+                    React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Buscar por Implemento"),
+                            React.createElement('input', { type: "text", placeholder: "Digite o tipo...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" })
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('label', { className: "block text-sm font-medium text-gray-700" }, "Filtrar por Filial"),
+                            React.createElement('select', { value: branchFilter, onChange: e => setBranchFilter(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" },
+                                React.createElement('option', { value: "all" }, "Todas as Filiais"),
+                                branches.map(b => React.createElement('option', { key: b, value: b }, b))
+                            )
+                        )
+                    ),
                     React.createElement('div', { className: "overflow-x-auto" },
                         React.createElement('table', { className: "min-w-full bg-white" },
                             React.createElement('thead',{className:"bg-gray-100"}, React.createElement('tr', null, ["Tipo de Implemento", "Filial", "Preço", "Data Criação", userRole === 'administrador' ? "Ações" : null].filter(Boolean).map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))),
                             React.createElement('tbody', {className:"divide-y"}, 
                                 isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center"}, "Carregando...")) : 
-                                records.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
-                                records.map(r => React.createElement('tr', {key:r.id},
+                                filteredRecords.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:5, className:"p-4 text-center text-gray-500"}, "Nenhum registro encontrado.")) :
+                                filteredRecords.map(r => React.createElement('tr', {key:r.id},
                                     React.createElement('td',{className:"p-2"}, r.tipo_de_implemento),
                                     React.createElement('td',{className:"p-2"}, r.filial),
                                     React.createElement('td',{className:"p-2"}, `R$ ${r.preco.toFixed(2).replace('.', ',')}`),
@@ -1304,12 +2015,15 @@
                     dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
                     outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
                     branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
+                    concessionManagement: { title: 'Concessão', icon: 'FileText' },
+                    contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
                     displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
                     additionalCities: { title: 'Adicional Cidades', icon: 'Building' },
                     fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
                     branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
                     equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
                     userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
+                    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
               };
 
               const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
@@ -1351,12 +2065,15 @@
                     dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
                     outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
                     branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
+                    concessionManagement: { title: 'Concessão', icon: 'FileText' },
+                    contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
                     displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
                     additionalCities: { title: 'Adicional Cidades', icon: 'Building' },
                     fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
                     branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
                     equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
                     userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
+                    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
                 };
                 const availablePages = Object.keys(ALL_PAGES).filter(key => {
                     return userRole === 'administrador' || !ALL_PAGES[key].adminOnly;
@@ -1506,12 +2223,15 @@
                         case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
                         case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
                         case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
+                        case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
+                        case 'contractManagement': return React.createElement(ContractManagement, { userId, userRole, showToast });
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
                         case 'fixedPrices': return React.createElement(FixedPrices, { userId, userRole, showToast });
                         case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
                         case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
                         case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
+                        case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
                         case 'quickAccessMenu':
                         default: return React.createElement(QuickAccessMenu, { setCurrentPage, userFullname, quickLinks, onEdit: () => setIsEditModalOpen(true) });
                     }
@@ -1532,7 +2252,9 @@
                                         React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' })
                                     ),
                                      React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
-                                        React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' })
+                                        React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
+                                        React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
+                                        React.createElement(MenuItem, { page: 'contractManagement', icon: 'FileText', text: 'Contrato/Distrato' })
                                      ),
                                      React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
                                         React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
@@ -1542,7 +2264,8 @@
                                      userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
                                         React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
                                         React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
-                                        React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' })
+                                        React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
+                                        React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'Users', text: 'Terceiros' })
                                     )
                                 )
                             ),
@@ -1580,3 +2303,4 @@
     </script>
 </body>
 </html>
+
