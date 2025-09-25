@@ -835,7 +835,7 @@
               );
             }
 
-            function ConcessionManagement({ userId, userRole, showToast }) {
+           function ConcessionManagement({ userId, userRole, showToast }) {
                 const [concessions, setConcessions] = React.useState([]);
                 const [isLoading, setIsLoading] = React.useState(false);
                 const [showForm, setShowForm] = React.useState(false);
@@ -1018,8 +1018,8 @@
                         React.createElement('table', { className: "min-w-full bg-white text-sm" },
                             React.createElement('thead', { className: "bg-gray-100" },
                                 React.createElement('tr', null,
-                                    // ATUALIZADO: Ordem dos cabeçalhos alterada
-                                    ["Apelido", "Nome", "Cód. SAP", "Placa", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo", "Tipo Implemento"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
+                                    // ATUALIZADO: Ordem dos cabeçalhos alterada conforme solicitado
+                                    ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
                                     userRole === 'administrador' && React.createElement('th', { className: "p-2 text-right" }, "Ações")
                                 )
                             ),
@@ -1029,16 +1029,16 @@
                                 filteredList.map(c =>
                                     React.createElement('tr', { key: c.id, className: "hover:bg-gray-50" },
                                         // ATUALIZADO: Ordem das células alterada para corresponder ao cabeçalho
-                                        React.createElement('td', { className: "p-2" }, c.apelido),
-                                        React.createElement('td', { className: "p-2" }, c.nome),
                                         React.createElement('td', { className: "p-2" }, c.codSAP),
+                                        React.createElement('td', { className: "p-2" }, c.apelido),
                                         React.createElement('td', { className: "p-2" }, c.placa),
+                                        React.createElement('td', { className: "p-2" }, c.tipoImplemento),
+                                        React.createElement('td', { className: "p-2" }, c.nome),
                                         React.createElement('td', { className: "p-2" }, formatCNPJ(c.cnpj)),
                                         React.createElement('td', { className: "p-2" }, formatCPF(c.cpf)),
                                         React.createElement('td', { className: "p-2" }, formatDate(c.data_inicio)),
                                         React.createElement('td', { className: "p-2" }, formatDate(c.data_fim)),
                                         React.createElement('td', { className: "p-2" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
-                                        React.createElement('td', { className: "p-2" }, c.tipoImplemento),
                                         userRole === 'administrador' && React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
                                             c.data_fim ? 
                                                 React.createElement('span', { className: "text-gray-400 italic" }, "Encerrada") :
@@ -2489,6 +2489,7 @@
     </script>
 </body>
 </html>
+
 
 
 
