@@ -2582,193 +2582,215 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
                     )
                 );
             }
-            function ExpenseQuery({ userId, userRole, showToast }) {
-                // NOVO: Estados para o filtro de placa e para controlar se uma busca foi feita
-                const [periodo, setPeriodo] = React.useState('');
-                const [placa, setPlaca] = React.useState('');
-                const [expenses, setExpenses] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(false);
-                const [isImporting, setIsImporting] = React.useState(false);
-                const [file, setFile] = React.useState(null);
-                const [hasSearched, setHasSearched] = React.useState(false);
+            Claro, vamos fazer esses ajustes na tela de "Consulta e Importação de Despesas" (ExpenseQuery).
 
-                const formatPeriodo = (value) => {
-                    const cleaned = ('' + value).replace(/[^\d]/g, '');
-                    const truncated = cleaned.slice(0, 6);
-                    if (truncated.length > 2) {
-                        return `${truncated.slice(0, 2)}/${truncated.slice(2)}`;
-                    }
-                    return truncated;
-                };
-                
-                // ATUALIZADO: Lógica de busca com paginação para quebrar o limite de 1000 linhas
-                const handleSearch = async () => {
-                    if (!periodo && !placa) {
-                        showToast("Informe um Período ou uma Placa para buscar.", "error");
-                        return;
-                    }
+A sua solicitação tem três partes:
 
-                    setIsLoading(true);
-                    setHasSearched(true);
-                    setExpenses([]);
+Atualizar a lógica de importação para pegar o valor da coluna "Total" do Excel.
 
-                    let allResults = [];
-                    let page = 0;
-                    const pageSize = 1000; // O máximo que o Supabase permite por vez
+Adicionar a nova coluna "Valor" na tabela de visualização.
 
-                    while (true) {
-                        const from = page * pageSize;
-                        const to = from + pageSize - 1;
+Aplicar o nosso novo padrão visual para manter a uniformidade.
 
-                        try {
-                            let query = supabase
-                                .from('despesas_manutencao')
-                                .select('*')
-                                .order('placa')
-                                .range(from, to);
+⚠️ Ação Necessária Primeiro: Banco de Dados
+Antes de alterar o código, você precisa fazer uma pequena modificação na sua tabela no Supabase.
 
-                            // Adiciona os filtros se eles foram preenchidos
-                            if (periodo) {
-                                query = query.eq('periodo_referencia', periodo);
-                            }
-                            if (placa) {
-                                query = query.eq('placa', placa.trim().toUpperCase());
-                            }
-                            
-                            const { data, error } = await query;
-                            if (error) throw error;
+Vá até a sua tabela despesas_manutencao no painel do Supabase.
 
-                            if (data) {
-                                allResults = [...allResults, ...data];
-                            }
+Adicione uma nova coluna chamada valor.
 
-                            // Se o número de resultados for menor que o tamanho da página, chegamos ao fim
-                            if (!data || data.length < pageSize) {
-                                break;
-                            }
+Escolha o tipo da coluna como numeric ou float8. Isso é importante para garantir que os valores monetários sejam salvos corretamente.
 
-                            page++; // Prepara para buscar a próxima página
-                        } catch (err) {
-                            showToast("Erro ao buscar despesas.", "error");
-                            break; // Sai do loop em caso de erro
-                        }
-                    }
-                    
-                    setExpenses(allResults);
-                    setIsLoading(false);
-                };
+O código abaixo só vai funcionar depois que essa coluna existir no banco de dados.
 
-                const handleFileChange = (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                        setFile(e.target.files[0]);
-                    }
-                };
+🛠️ Alterações no Código
+Para facilitar e evitar erros, vou te passar a função ExpenseQuery inteira e atualizada. Por favor, substitua toda a sua função ExpenseQuery por este bloco de código abaixo.
 
-                const handleImport = () => {
-                    // ... (a lógica de importação permanece a mesma)
-                    if (!file) {
-                        showToast("Por favor, selecione um arquivo para importar.", "error");
-                        return;
-                    }
-                    if (!periodo.match(/^\d{2}\/\d{4}$/)) {
-                        showToast("Por favor, insira um período de referência válido (MM/AAAA).", "error");
-                        return;
-                    }
-                    setIsImporting(true);
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const sheetName = workbook.SheetNames[0];
-                            const worksheet = workbook.Sheets[sheetName];
-                            const json = XLSX.utils.sheet_to_json(worksheet);
-                            const dataToInsert = json
-                                .filter(row => row['Tipo Lancamento'] == 2)
-                                .map(row => ({
-                                    periodo_referencia: periodo,
-                                    placa: row['Placa'],
-                                    ordem_manutencao: row['Fatura/Doc.Contab'],
-                                    pedido: row['Pedido'],
-                                    descricao: row['Material']
-                                }));
-                            if (dataToInsert.length === 0) {
-                                showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
-                                setIsImporting(false);
-                                return;
-                            }
-                            const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
-                            if (error) throw error;
-                            showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
-                            setFile(null); 
-                            document.getElementById('file-input').value = '';
-                            handleSearch(); // ATUALIZADO: Atualiza a busca após importar
-                        } catch (err) {
-                            showToast(`Erro ao processar o arquivo: ${err.message}`, "error");
-                        }
-                        setIsImporting(false);
-                    };
-                    reader.readAsArrayBuffer(file);
-                };
+Ele já contém todas as mudanças necessárias.
 
-                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
-                    
-                    // ATUALIZADO: Seção de busca visível para Supervisor e Administrador
-                    React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Período (MM/AAAA)"),
-                            React.createElement('input', { type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
-                        ),
-                        React.createElement('div', null,
-                            React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Placa"),
-                            React.createElement('input', { type: 'text', placeholder: "Ex: ABC1234", value: placa, onChange: e => setPlaca(e.target.value), className: "w-full p-2 border rounded" })
-                        ),
-                        React.createElement('button', { onClick: handleSearch, disabled: isLoading, className: "w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400" },
-                           isLoading ? 'Buscando...' : 'Buscar'
-                        )
-                    ),
+JavaScript
 
-                    // ATUALIZADO: Seção de importação visível apenas para Administrador
-                    userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
-                        React.createElement('div', null,
-                            React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha para Importar"),
-                            React.createElement('input', {
-                                id: 'file-input', type: "file", onChange: handleFileChange,
-                                className: "w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
-                                accept: ".xlsx, .xls"
-                            })
-                        ),
-                        React.createElement('button', { onClick: handleImport, disabled: isImporting, className: "w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400" },
-                           isImporting ? 'Importando...' : 'Importar Dados'
-                        )
-                    ),
+/* INÍCIO DO CÓDIGO PARA SUBSTITUIR TODA A FUNÇÃO ExpenseQuery */
 
-                    React.createElement('div', { className: "overflow-x-auto" },
-                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
-                            React.createElement('thead', { className: "bg-gray-100" },
-                                React.createElement('tr', null,
-                                    ["Período", "Placa", "Ordem da Manutenção", "Pedido", "Descrição"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
-                                )
+function ExpenseQuery({ userId, userRole, showToast }) {
+    const [periodo, setPeriodo] = React.useState('');
+    const [placa, setPlaca] = React.useState('');
+    const [expenses, setExpenses] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [isImporting, setIsImporting] = React.useState(false);
+    const [file, setFile] = React.useState(null);
+    const [hasSearched, setHasSearched] = React.useState(false);
+
+    const formatPeriodo = (value) => {
+        const cleaned = ('' + value).replace(/[^\d]/g, '');
+        const truncated = cleaned.slice(0, 6);
+        if (truncated.length > 2) {
+            return `${truncated.slice(0, 2)}/${truncated.slice(2)}`;
+        }
+        return truncated;
+    };
+
+    const handleSearch = async () => {
+        if (!periodo && !placa) {
+            showToast("Informe um Período ou uma Placa para buscar.", "error");
+            return;
+        }
+        setIsLoading(true);
+        setHasSearched(true);
+        setExpenses([]);
+        let allResults = [];
+        let page = 0;
+        const pageSize = 1000;
+        while (true) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            try {
+                let query = supabase
+                    .from('despesas_manutencao')
+                    .select('*')
+                    .order('placa')
+                    .range(from, to);
+                if (periodo) {
+                    query = query.eq('periodo_referencia', periodo);
+                }
+                if (placa) {
+                    query = query.eq('placa', placa.trim().toUpperCase());
+                }
+                const { data, error } = await query;
+                if (error) throw error;
+                if (data) {
+                    allResults = [...allResults, ...data];
+                }
+                if (!data || data.length < pageSize) {
+                    break;
+                }
+                page++;
+            } catch (err) {
+                showToast("Erro ao buscar despesas.", "error");
+                break;
+            }
+        }
+        setExpenses(allResults);
+        setIsLoading(false);
+    };
+
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleImport = () => {
+        if (!file) {
+            showToast("Por favor, selecione um arquivo para importar.", "error");
+            return;
+        }
+        if (!periodo.match(/^\d{2}\/\d{4}$/)) {
+            showToast("Por favor, insira um período de referência válido (MM/AAAA) para a importação.", "error");
+            return;
+        }
+        setIsImporting(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                // ATUALIZADO: Lógica de mapeamento para incluir o "Total" como "valor"
+                const dataToInsert = json
+                    .filter(row => row['Tipo Lancamento'] == 2)
+                    .map(row => ({
+                        periodo_referencia: periodo,
+                        placa: row['Placa'],
+                        ordem_manutencao: row['Fatura/Doc.Contab'],
+                        pedido: row['Pedido'],
+                        descricao: row['Material'],
+                        // NOVO: Adiciona o campo "valor" buscando da coluna "Total" do Excel
+                        valor: parseFloat(row['Total']) || 0
+                    }));
+
+                if (dataToInsert.length === 0) {
+                    showToast("Nenhuma despesa válida (Lançamento = 2) encontrada na planilha.", "info");
+                    setIsImporting(false);
+                    return;
+                }
+                const { error } = await supabase.from('despesas_manutencao').insert(dataToInsert);
+                if (error) throw error;
+                showToast(`${dataToInsert.length} despesas importadas com sucesso!`, "success");
+                setFile(null);
+                document.getElementById('file-input').value = '';
+                handleSearch();
+            } catch (err) {
+                showToast(`Erro ao processar o arquivo: ${err.message}`, "error");
+            }
+            setIsImporting(false);
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta e Importação de Despesas"),
+        React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" },
+            React.createElement('div', null,
+                React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Período (MM/AAAA)"),
+                React.createElement('input', { type: 'text', placeholder: "Ex: 09/2025", value: periodo, onChange: e => setPeriodo(formatPeriodo(e.target.value)), className: "w-full p-2 border rounded" })
+            ),
+            React.createElement('div', null,
+                React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Placa"),
+                React.createElement('input', { type: 'text', placeholder: "Ex: ABC1234", value: placa, onChange: e => setPlaca(e.target.value), className: "w-full p-2 border rounded" })
+            ),
+            React.createElement('button', { onClick: handleSearch, disabled: isLoading, className: "w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400" },
+                isLoading ? 'Buscando...' : 'Buscar'
+            )
+        ),
+        userRole === 'administrador' && React.createElement('div', { className: "mb-8 p-4 border rounded-lg bg-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 items-end" },
+            React.createElement('div', null,
+                React.createElement('label', { htmlFor: 'file-input', className: "block text-sm font-medium text-gray-700 mb-1" }, "Planilha para Importar"),
+                React.createElement('input', {
+                    id: 'file-input', type: "file", onChange: handleFileChange,
+                    className: "w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100",
+                    accept: ".xlsx, .xls"
+                })
+            ),
+            React.createElement('button', { onClick: handleImport, disabled: isImporting, className: "w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400" },
+                isImporting ? 'Importando...' : 'Importar Dados'
+            )
+        ),
+
+        // ATUALIZADO: Tabela inteira com o novo estilo visual
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        // ATUALIZADO: Adicionado "Valor" aos cabeçalhos
+                        ["Período", "Placa", "Ordem da Manutenção", "Pedido", "Descrição", "Valor"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
+                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center text-slate-500" }, "Informe um Período ou Placa para iniciar a busca.")) :
+                    expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
+                    expenses.map(exp =>
+                        React.createElement('tr', { key: exp.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.periodo_referencia),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, 
+                                React.createElement('span', { className: "font-medium text-slate-800" }, exp.placa)
                             ),
-                            React.createElement('tbody', { className: "divide-y" },
-                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
-                                !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-gray-500" }, "Informe um Período ou Placa para iniciar a busca.")) :
-                                expenses.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Nenhuma despesa encontrada para os filtros aplicados.")) :
-                                expenses.map(exp =>
-                                    React.createElement('tr', { key: exp.id, className: "hover:bg-gray-50" },
-                                        React.createElement('td', { className: "p-2" }, exp.periodo_referencia),
-                                        React.createElement('td', { className: "p-2" }, exp.placa),
-                                        React.createElement('td', { className: "p-2" }, exp.ordem_manutencao),
-                                        React.createElement('td', { className: "p-2" }, exp.pedido),
-                                        React.createElement('td', { className: "p-2" }, exp.descricao)
-                                    )
-                                )
-                            )
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.ordem_manutencao),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.pedido),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, exp.descricao),
+                            // NOVO: Célula para exibir o valor formatado como moeda
+                            React.createElement('td', { className: "px-6 py-4" }, `R$ ${(exp.valor || 0).toFixed(2).replace('.', ',')}`)
                         )
                     )
-                );
-            }
+                )
+            )
+        )
+    );
+}
             function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
               const ALL_PAGES = {
                     dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
@@ -3090,6 +3112,7 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
     </script>
 </body>
 </html>
+
 
 
 
