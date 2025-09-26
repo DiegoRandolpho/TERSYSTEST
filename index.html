@@ -1403,7 +1403,7 @@
               );
             }
 
-            function Dashboard({ userId, showToast }) {
+                        function Dashboard({ userId, showToast }) {
               const [equipmentCounts, setEquipmentCounts] = React.useState({ 'BOMBA LANÇA': 0, 'BOMBA': 0, 'BETONEIRA': 0 });
               const [registros, setRegistros] = React.useState([]);
               const [allEquipment, setAllEquipment] = React.useState([]);
@@ -1417,22 +1417,25 @@
               const [isLoading, setIsLoading] = React.useState(false);
               
               const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR') : '';
-
               React.useEffect(() => {
                 const fetchData = async () => {
                     setIsLoading(true);
                     try {
                         const { data: usersData } = await supabase.from('app_users').select('username').eq('role', 'supervisor');
-                        setAvailableUsers(['Todos os Responsáveis', ...usersData.map(u => u.username)]);
+   
+                         setAvailableUsers(['Todos os Responsáveis', ...usersData.map(u => u.username)]);
 
                         const { data: branchesData } = await supabase.from('filiais').select('name, responsible');
                         setAvailableBranches(['Todas as Filiais', ...branchesData.map(b => b.name)]);
-                        setAllBranches(branchesData);
+             
+                       setAllBranches(branchesData);
 
-                        const { data: equipmentData } = await supabase.from('equipamentos').select('plate, type, model, brand, chassis');
+                        // MODIFICAÇÃO 1: Incluído o campo 'owned_by' na consulta de equipamentos
+                        const { data: equipmentData } = await supabase.from('equipamentos').select('plate, type, model, brand, chassis, owned_by');
                         setAllEquipment(equipmentData);
                     } catch (e) {
-                         showToast("Erro ao carregar filtros.", "error");
+       
+                                  showToast("Erro ao carregar filtros.", "error");
                     }
                     setIsLoading(false);
                 };
@@ -1444,14 +1447,17 @@
                     if (allBranches.length === 0 || allEquipment.length === 0) return;
                     setIsLoading(true);
                     try {
-                        const { data: transfersData } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
+   
+                         const { data: transfersData } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
                         const currentBranchMap = new Map(transfersData.map(t => [t.plate, t.newBranch]));
 
                         let equipmentForCounting = allEquipment;
-                        if (selectedUser !== 'Todos os Responsáveis') {
+            
+                         if (selectedUser !== 'Todos os Responsáveis') {
                             const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
                             equipmentForCounting = equipmentForCounting.filter(eq => userBranches.includes(currentBranchMap.get(eq.plate)));
-                        }
+             
+                       }
                         if (selectedBranch !== 'Todas as Filiais') {
                             equipmentForCounting = equipmentForCounting.filter(eq => currentBranchMap.get(eq.plate) === selectedBranch);
                         }
@@ -1466,7 +1472,6 @@
                         let query = supabase.from('trocasFilial').select('*').is('ending_date', null).order('newBranch', { ascending: true });
                         if (selectedBranch !== 'Todas as Filiais') query = query.eq('newBranch', selectedBranch);
                         let { data: trocasData } = await query;
-
                         if (selectedUser !== 'Todos os Responsáveis') {
                            const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
                            trocasData = trocasData.filter(t => userBranches.includes(t.newBranch));
@@ -1474,9 +1479,15 @@
 
                         let finalData = trocasData.map(t => {
                             const eq = allEquipment.find(e => e.plate === t.plate);
-                            return { ...t, tipoEquipamento: eq?.type, modeloEquipamento: eq?.model, marcaEquipamento: eq?.brand, chassiEquipamento: eq?.chassis };
+                            // MODIFICAÇÃO 2: Adicionado 'propriedadeEquipamento' ao objeto de dados final
+                            return { ...t, 
+                                tipoEquipamento: eq?.type, 
+                                modeloEquipamento: eq?.model, 
+                                marcaEquipamento: eq?.brand, 
+                                chassiEquipamento: eq?.chassis,
+                                propriedadeEquipamento: eq?.owned_by // Campo novo
+                            };
                         });
-
                         if (selectedEquipmentType !== 'Todos os Tipos') {
                             finalData = finalData.filter(d => d.tipoEquipamento === selectedEquipmentType);
                         }
@@ -1490,8 +1501,10 @@
               }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast]);
               
               const exportToCSV = () => {
-                const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Tipo", "Data Início", "Status"];
-                const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
+                // MODIFICAÇÃO 3: Adicionado 'Propriedade' ao cabeçalho do CSV
+                const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
+                // MODIFICAÇÃO 4: Adicionado 'propriedadeEquipamento' aos dados de linha do CSV
+                const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
                 let csvContent = headers.join(";") + "\n" + rows.map(e => e.join(";")).join("\n");
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a");
@@ -1502,44 +1515,54 @@
                 link.click();
                 document.body.removeChild(link);
               };
-
               const totalEquipment = Object.values(equipmentCounts).reduce((a, b) => a + b, 0);
-
               return (
                 React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                   React.createElement('div', { className: "flex justify-between items-center mb-6" },
                     React.createElement('h2', { className: "text-2xl font-bold" }, "Dashboard"),
-                    React.createElement('button', { onClick: exportToCSV, className: "p-2 bg-green-600 text-white rounded" }, "Exportar CSV")
+                    React.createElement('button', { onClick: exportToCSV, className: 
+                     "p-2 bg-green-600 text-white rounded" }, "Exportar CSV")
                   ),
                   React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                       React.createElement('select', { value: selectedBranch, onChange: e => setSelectedBranch(e.target.value), className: "p-2 border rounded" }, availableBranches.map(b => React.createElement('option',{key: b, value: b}, b))),
-                      React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
+      
+                     React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
                       React.createElement('select', { value: selectedEquipmentType, onChange: e => setSelectedEquipmentType(e.target.value), className: "p-2 border rounded" }, equipmentTypes.map(t => React.createElement('option',{key: t, value: t}, t)))
                   ),
-                  React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
+      
+                 React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
                   React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" },
                       Object.entries(equipmentCounts).map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, React.createElement('p', {className: "font-semibold"}, type), React.createElement('p', {className: "text-2xl font-bold"}, count)))
-                  ),
+            
+           ),
                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
                    React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
-                       React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
+                    React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
                        const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
                        const barColor = type === 'BOMBA LANÇA' ? 'bg-blue-500' : type === 'BETONEIRA' ? 'bg-green-500' : 'bg-yellow-500';
+                
                        return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', {className:`${barColor} h-2.5 rounded-full`, style:{width: `${percentage}%`}})))
                    })),
                   React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
                   React.createElement('div', { className: "overflow-x-auto" },
-                    React.createElement('table', { className: "min-w-full bg-white" },
-                      React.createElement('thead', {className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Tipo", "Data Início", "Status"].map(h => React.createElement('th',{key:h, className:"p-2 text-left"}, h)))),
+         
+                       React.createElement('table', { className: "min-w-full bg-white" },
+                      // MODIFICAÇÃO 5: Adicionada a coluna 'Propriedade' no cabeçalho da tabela
+                      React.createElement('thead', {className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"].map(h => React.createElement('th',{key:h, className:"p-2 text-left"}, h)))),
                       React.createElement('tbody', {className:"divide-y"}, registros.map(r => React.createElement('tr', {key:r.id},
-                        React.createElement('td',{className:"p-2"}, r.newBranch),
+                  
+                       React.createElement('td',{className:"p-2"}, r.newBranch),
                         React.createElement('td',{className:"p-2"}, r.plate),
                         React.createElement('td',{className:"p-2"}, r.modeloEquipamento),
                         React.createElement('td',{className:"p-2"}, r.marcaEquipamento),
-                        React.createElement('td',{className:"p-2"}, r.chassiEquipamento),
+                  
+                       React.createElement('td',{className:"p-2"}, r.chassiEquipamento),
+                        // MODIFICAÇÃO 6: Adicionada a célula com os dados de 'Propriedade'
+                        React.createElement('td',{className:"p-2"}, r.propriedadeEquipamento),
                         React.createElement('td',{className:"p-2"}, r.tipoEquipamento),
                         React.createElement('td',{className:"p-2"}, formatDate(r.executionDate)),
-                        React.createElement('td',{className:`p-2 font-semibold ${r.status === 'ATIVO' ? 'text-green-600' : 'text-red-600'}`}, r.status),
+                        React.createElement('td',{className:`p-2 font-semibold ${r.status === 'ATIVO' ?
+                         'text-green-600' : 'text-red-600'}`}, r.status),
                       )))
                     )
                   )
@@ -3007,6 +3030,7 @@
     </script>
 </body>
 </html>
+
 
 
 
