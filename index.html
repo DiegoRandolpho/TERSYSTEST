@@ -2582,34 +2582,6 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
                     )
                 );
             }
-            Claro, vamos fazer esses ajustes na tela de "Consulta e Importação de Despesas" (ExpenseQuery).
-
-A sua solicitação tem três partes:
-
-Atualizar a lógica de importação para pegar o valor da coluna "Total" do Excel.
-
-Adicionar a nova coluna "Valor" na tabela de visualização.
-
-Aplicar o nosso novo padrão visual para manter a uniformidade.
-
-⚠️ Ação Necessária Primeiro: Banco de Dados
-Antes de alterar o código, você precisa fazer uma pequena modificação na sua tabela no Supabase.
-
-Vá até a sua tabela despesas_manutencao no painel do Supabase.
-
-Adicione uma nova coluna chamada valor.
-
-Escolha o tipo da coluna como numeric ou float8. Isso é importante para garantir que os valores monetários sejam salvos corretamente.
-
-O código abaixo só vai funcionar depois que essa coluna existir no banco de dados.
-
-🛠️ Alterações no Código
-Para facilitar e evitar erros, vou te passar a função ExpenseQuery inteira e atualizada. Por favor, substitua toda a sua função ExpenseQuery por este bloco de código abaixo.
-
-Ele já contém todas as mudanças necessárias.
-
-JavaScript
-
 /* INÍCIO DO CÓDIGO PARA SUBSTITUIR TODA A FUNÇÃO ExpenseQuery */
 
 function ExpenseQuery({ userId, userRole, showToast }) {
@@ -3112,6 +3084,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
