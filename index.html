@@ -1592,30 +1592,42 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
                        return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', {className:`${barColor} h-2.5 rounded-full`, style:{width: `${percentage}%`}})))
                    })),
                   React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
-                  React.createElement('div', { className: "overflow-x-auto" },
-         
-                       React.createElement('table', { className: "min-w-full bg-white" },
-                      // MODIFICAÇÃO 5: Adicionada a coluna 'Propriedade' no cabeçalho da tabela
-                      React.createElement('thead', {className:"bg-gray-100"}, React.createElement('tr', null, ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"].map(h => React.createElement('th',{key:h, className:"p-2 text-left"}, h)))),
-                      React.createElement('tbody', {className:"divide-y"}, registros.map(r => React.createElement('tr', {key:r.id},
-                  
-                       React.createElement('td',{className:"p-2"}, r.newBranch),
-                        React.createElement('td',{className:"p-2"}, r.plate),
-                        React.createElement('td',{className:"p-2"}, r.modeloEquipamento),
-                        React.createElement('td',{className:"p-2"}, r.marcaEquipamento),
-                  
-                       React.createElement('td',{className:"p-2"}, r.chassiEquipamento),
-                        // MODIFICAÇÃO 6: Adicionada a célula com os dados de 'Propriedade'
-                        React.createElement('td',{className:"p-2"}, r.propriedadeEquipamento),
-                        React.createElement('td',{className:"p-2"}, r.tipoEquipamento),
-                        React.createElement('td',{className:"p-2"}, formatDate(r.executionDate)),
-                        React.createElement('td',{className:`p-2 font-semibold ${r.status === 'ATIVO' ?
-                         'text-green-600' : 'text-red-600'}`}, r.status),
-                      )))
-                    )
-                  )
+React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+    React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+        React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+            React.createElement('tr', null,
+                // MODIFICADO: Adicionado 'Propriedade' e removido 'Status' para corresponder aos dados
+                ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início"].map(h => 
+                    React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h)
                 )
-              );
+            )
+        ),
+        React.createElement('tbody', null,
+            isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
+            registros.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Nenhum equipamento encontrado.")) :
+            registros.map(r => React.createElement('tr', { 
+                key: r.id, 
+                // A MÁGICA ACONTECE AQUI: Fundo alternado (zebra) e efeito de hover
+                className: "hover:bg-blue-50 even:bg-slate-50" 
+            },
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.newBranch),
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, 
+                    React.createElement('span', { className: "font-medium text-slate-800" }, r.plate)
+                ),
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.modeloEquipamento),
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.marcaEquipamento),
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.chassiEquipamento),
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.propriedadeEquipamento),
+                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" },
+                    React.createElement('span', {
+                        className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(r.tipoEquipamento)}`
+                    }, r.tipoEquipamento)
+                ),
+                React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate)) // Última coluna não precisa da borda
+            ))
+        )
+    )
+)
             }
 
             function OutsourcingDistribution({ userId, showToast, setCurrentPage }) {
@@ -3078,4 +3090,5 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
     </script>
 </body>
 </html>
+
 
