@@ -2735,18 +2735,19 @@
               );
             }
             function WhatsAppButton({ phoneNumber, message }) {
-                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/${cleanedPhoneNumber}?text=${encodeURIComponent(message)}`;
 
                 return React.createElement('a', {
-                    href: whatsappUrl,
-                    target: '_blank',
-                    rel: 'noopener noreferrer',
-                    title: 'Fale Conosco no WhatsApp',
-                    className: "fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
-                },
-                    React.createElement(LucideIcon, { name: 'WhatsApp', className: 'h-8 w-8' })
-                );
-            }
+                href: whatsappUrl,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                title: 'Fale Conosco no WhatsApp',
+                className: "fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
+             },
+                React.createElement(LucideIcon, { name: 'WhatsApp', className: 'h-8 w-8' })
+            );
+        }
             function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
                 const [selectedLinks, setSelectedLinks] = React.useState(currentLinks || []);
                 const ALL_PAGES = {
@@ -3006,6 +3007,7 @@
     </script>
 </body>
 </html>
+
 
 
 
