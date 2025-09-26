@@ -540,37 +540,48 @@
                     )
                 ),
                 React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-                React.createElement('div', { className: "overflow-x-auto" },
-                    React.createElement('table', { className: "min-w-full bg-white text-sm" },
-                        React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, 
-                            React.createElement('th', {className: "p-2 text-left"}, "Placa"), 
-                            React.createElement('th', {className: "p-2 text-left"}, "Modelo"),
-                            React.createElement('th', {className: "p-2 text-left"}, "Marca"),
-                            React.createElement('th', {className: "p-2 text-left"}, "Chassi"),
-                            React.createElement('th', {className: "p-2 text-left"}, "Tipo"), 
-                            React.createElement('th', {className: "p-2 text-right"}, "Ações"))),
-                        React.createElement('tbody', { className: "divide-y" },
+                /* ATUALIZADO: Wrapper da tabela */
+                React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
+                    /* ATUALIZADO: Tabela */
+                    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
+                        /* ATUALIZADO: Cabeçalho */
+                        React.createElement('thead', { className: "text-xs text-gray-700 uppercase bg-gray-100" }, 
+                            React.createElement('tr', null, 
+                                /* ATUALIZADO: Colunas do Cabeçalho */
+                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Placa"), 
+                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Modelo"),
+                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Marca"),
+                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Chassi"),
+                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Tipo"), 
+                                React.createElement('th', {className: "px-4 py-3 font-semibold text-center"}, "Ações") /* A última coluna não precisa de borda direita */
+                            )
+                        ),
+                        /* ATUALIZADO: Corpo da Tabela */
+                        React.createElement('tbody', { className: "divide-y divide-gray-100" },
                             filteredEquipmentList.map(eq => (
-                                React.createElement('tr', { key: eq.id, className: "hover:bg-gray-50" },
+                                /* ATUALIZADO: Linha da Tabela */
+                                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50" },
                                     editingEquipment && editingEquipment.id === eq.id ?
                                     React.createElement(React.Fragment, null,
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
-                                        React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                        /* ATUALIZADO: Células de Edição */
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
+                                        React.createElement('td', { className: "p-2 text-center" },
                                           React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
                                           React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
                                         )
                                     ) :
                                     React.createElement(React.Fragment, null,
-                                        React.createElement('td', { className: "p-2" }, eq.plate),
-                                        React.createElement('td', { className: "p-2" }, eq.model),
-                                        React.createElement('td', { className: "p-2" }, eq.brand),
-                                        React.createElement('td', { className: "p-2" }, eq.chassis),
-                                        React.createElement('td', { className: "p-2" }, eq.type),
-                                        React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
+                                        /* ATUALIZADO: Células de Dados */
+                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.plate),
+                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.model),
+                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.brand),
+                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.chassis),
+                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.type),
+                                        React.createElement('td', { className: "px-4 py-3 text-center" }, /* A última célula não precisa de borda */
                                             React.createElement('button', {onClick: ()=>handleEditClick(eq), className:"text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Edit'})),
                                             React.createElement('button', {onClick: ()=>confirmDeleteEquipment(eq), className:"text-red-600 p-1 hover:bg-red-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Trash2'}))
                                         )
@@ -3030,6 +3041,7 @@
     </script>
 </body>
 </html>
+
 
 
 
