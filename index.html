@@ -1560,7 +1560,128 @@
                     )
                 );
             }
-            
+            function DisplacementApprovals({ userRole, showToast }) {
+                const [approvals, setApprovals] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [statusFilter, setStatusFilter] = React.useState('pendente');
+                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+                const [actionDetails, setActionDetails] = React.useState({ record: null, action: null }); // action: 'aprovado' ou 'rejeitado'
+
+                const formatDate = (date) => date ? new Date(date).toLocaleString('pt-BR') : '—';
+                
+                const fetchApprovals = React.useCallback(async () => {
+                    setIsLoading(true);
+                    try {
+                        const { data, error } = await supabase
+                            .from('movimentacoes_deslocamentos')
+                            .select('*')
+                            .eq('status', statusFilter)
+                            .order('data_criacao', { ascending: true });
+                        
+                        if (error) throw error;
+                        setApprovals(data || []);
+                    } catch (err) {
+                        showToast("Erro ao carregar os lançamentos.", "error");
+                    }
+                    setIsLoading(false);
+                }, [statusFilter, showToast]);
+
+                React.useEffect(() => {
+                    fetchApprovals();
+                }, [fetchApprovals]);
+                
+                const handleActionClick = (record, action) => {
+                    setActionDetails({ record, action });
+                    setShowConfirmModal(true);
+                };
+
+                const handleConfirmAction = async () => {
+                    if (!actionDetails.record || !actionDetails.action) return;
+                    
+                    setIsLoading(true);
+                    const { record, action } = actionDetails;
+
+                    try {
+                        const { error } = await supabase
+                            .from('movimentacoes_deslocamentos')
+                            .update({
+                                status: action,
+                                data_aprovacao: new Date().toISOString()
+                            })
+                            .eq('id', record.id);
+                        
+                        if (error) throw error;
+
+                        showToast(`Lançamento ${action} com sucesso!`, 'success');
+                        setApprovals(prev => prev.filter(item => item.id !== record.id)); // Remove da lista para feedback imediato
+
+                    } catch (err) {
+                        showToast(`Erro ao processar a ação: ${err.message}`, "error");
+                    }
+                    
+                    setShowConfirmModal(false);
+                    setActionDetails({ record: null, action: null });
+                    setIsLoading(false);
+                };
+
+                const getStatusBadge = (status) => {
+                    const baseClasses = "px-2 py-1 text-xs font-semibold rounded-full";
+                    switch (status) {
+                        case 'aprovado': return React.createElement('span', {className: `bg-green-100 text-green-800 ${baseClasses}`}, "Aprovado");
+                        case 'rejeitado': return React.createElement('span', {className: `bg-red-100 text-red-800 ${baseClasses}`}, "Rejeitado");
+                        case 'pendente':
+                        default:
+                            return React.createElement('span', {className: `bg-yellow-100 text-yellow-800 ${baseClasses}`}, "Pendente");
+                    }
+                };
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center" }, "Aprovação de Deslocamentos"),
+                    
+                    React.createElement('div', { className: "flex justify-center border-b mb-6" },
+                        ['pendente', 'aprovado', 'rejeitado'].map(status =>
+                            React.createElement('button', {
+                                key: status,
+                                onClick: () => setStatusFilter(status),
+                                className: `py-2 px-4 text-sm font-medium capitalize ${statusFilter === status ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+                            }, status)
+                        )
+                    ),
+
+                    React.createElement('div', { className: "overflow-x-auto" },
+                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
+                            React.createElement('thead',{className:"bg-gray-100"}, 
+                                React.createElement('tr', null, ["Placa", "Origem", "Destino", "Solicitante", "Status", "Criação", "Observação", "Ações"].map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))
+                            ),
+                            React.createElement('tbody', {className:"divide-y"}, 
+                                isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:8, className:"p-4 text-center"}, "Carregando...")) :
+                                approvals.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:8, className:"p-4 text-center text-gray-500"}, `Nenhum lançamento com status "${statusFilter}" encontrado.`)) :
+                                approvals.map(r => React.createElement('tr', {key:r.id, className: "hover:bg-gray-50"},
+                                    React.createElement('td',{className:"p-2"}, r.placa),
+                                    React.createElement('td',{className:"p-2"}, r.filial_origem),
+                                    React.createElement('td',{className:"p-2"}, r.filial_destino),
+                                    React.createElement('td',{className:"p-2"}, r.solicitante),
+                                    React.createElement('td',{className:"p-2"}, getStatusBadge(r.status)),
+                                    React.createElement('td',{className:"p-2"}, formatDate(r.data_criacao)),
+                                    React.createElement('td',{className:"p-2 max-w-xs truncate", title: r.observacao}, r.observacao),
+                                    React.createElement('td', {className:"p-2 text-center whitespace-nowrap"},
+                                        (userRole === 'administrador' && r.status === 'pendente') ?
+                                        React.createElement(React.Fragment, null,
+                                            React.createElement('button',{onClick:()=>handleActionClick(r, 'aprovado'), className:"bg-green-500 text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-green-600 mr-2 transition"}, "Aprovar"),
+                                            React.createElement('button',{onClick:()=>handleActionClick(r, 'rejeitado'), className:"bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-red-600 transition"}, "Rejeitar")
+                                        ) : React.createElement('span', {className: 'text-gray-400'}, '—')
+                                    )
+                                ))
+                            )
+                        )
+                    ),
+                    showConfirmModal && React.createElement(ConfirmationModal, { 
+                        message: `Deseja realmente ${actionDetails.action === 'aprovado' ? 'APROVAR' : 'REJEITAR'} o lançamento da placa "${actionDetails.record?.placa}"?`, 
+                        onConfirm: handleConfirmAction, 
+                        onCancel: () => setShowConfirmModal(false) 
+                    })
+                );
+            }
             function Displacements({ userId, userRole, showToast }) {
                 const [displacements, setDisplacements] = React.useState([]);
                 const [branches, setBranches] = React.useState([]);
@@ -2799,7 +2920,8 @@
                         case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
                         case 'fixedPrices': return React.createElement(FixedPrices, { userId, userRole, showToast });
                         case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
-                        case 'displacementReleases': return React.createElement(DisplacementReleases, { userId, userRole, showToast }); // <-- ADICIONE ESTA LINHA
+                        case 'displacementReleases': return React.createElement(DisplacementReleases, { userId, userRole, showToast });
+                        case 'displacementApprovals': return React.createElement(DisplacementApprovals, { userRole, showToast });
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
                         case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
@@ -2828,6 +2950,7 @@
                                      React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
                                         React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
                                         React.createElement(MenuItem, { page: 'displacementReleases', icon: 'Truck', text: 'Lanç. Deslocamento' }),
+                                        React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'UserCheck', text: 'Aprovação Desloc.' }),
                                         React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
                                         React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Despesa' })
                                      ),
@@ -2881,6 +3004,7 @@
     </script>
 </body>
 </html>
+
 
 
 
