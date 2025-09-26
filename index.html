@@ -1535,18 +1535,23 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
     }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast]);
     
     const exportToCSV = () => {
-        const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
-        const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
-        let csvContent = headers.join(";") + "\\n" + rows.map(e => e.join(";")).join("\\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "dashboard.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+    // MODIFICAÇÃO 3: Adicionado 'Propriedade' ao cabeçalho do CSV
+    [cite_start]const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"]; [cite: 456]
+    // MODIFICAÇÃO 4: Adicionado 'propriedadeEquipamento' aos dados de linha do CSV
+    [cite_start]const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]); [cite: 457]
+    
+    // CORREÇÃO: Trocado "\n" por "\r\n" para compatibilidade com Excel
+    let csvContent = headers.join(";") + "\r\n" + rows.map(e => e.join(";")).join("\r\n");
+
+    [cite_start]const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); [cite: 458]
+    [cite_start]const link = document.createElement("a"); [cite: 459]
+    [cite_start]const url = URL.createObjectURL(blob); [cite: 459]
+    [cite_start]link.setAttribute("href", url); [cite: 459]
+    [cite_start]link.setAttribute("download", "dashboard.csv"); [cite: 459]
+    [cite_start]document.body.appendChild(link); [cite: 459]
+    [cite_start]link.click(); [cite: 459]
+    [cite_start]document.body.removeChild(link); [cite: 459]
+};
 
     const totalEquipment = Object.values(equipmentCounts).reduce((a, b) => a + b, 0);
 
@@ -3085,6 +3090,7 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
     </script>
 </body>
 </html>
+
 
 
 
