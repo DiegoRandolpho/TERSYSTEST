@@ -2962,7 +2962,7 @@
                                 React.createElement('button', { onClick: toggleSidebarCollapse, className: "w-full flex items-center p-3 rounded-lg text-gray-400 hover:bg-gray-700 justify-center mb-2" },
                                     React.createElement(LucideIcon, { name: isSidebarCollapsed ? "ChevronsRight" : "ChevronsLeft", className: "w-6 h-6" })
                                 ),
-                                React.createElement('button', { onClick: handleLogout, className: `w-full flex items-center p-3 rounded-lg text-red-400 hover:bg-gray-700 ${isSidebarCollapsed ? ' flex justify-center' : ''}` },
+                                React.createElement('button', { onClick: handleLogout, className: `w-full flex items-center justify-center p-3 rounded-lg text-red-400 hover:bg-gray-700` },
                                     React.createElement(LucideIcon, { name: "LogOut", className: `w-6 h-6 ${!isSidebarCollapsed && 'mr-3'}` }),
                                     !isSidebarCollapsed && 'Sair'
                                 )
@@ -2992,4 +2992,5 @@
     </script>
 </body>
 </html>
+
 
