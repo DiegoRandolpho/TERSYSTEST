@@ -2050,12 +2050,10 @@
 
                 const formatDate = (date) => date ? new Date(date).toLocaleString('pt-BR') : '—';
 
-                // Busca apenas os dados necessários para o formulário e a lista do usuário
                 const fetchData = React.useCallback(async () => {
                     setIsLoading(true);
                     try {
                         const [releasesRes, branchesRes, platesRes] = await Promise.all([
-                            // Alterado: Filtra os lançamentos pelo ID do usuário logado
                             supabase.from('movimentacoes_deslocamentos').select('*').eq('solicitante', userId).order('data_criacao', { ascending: false }),
                             supabase.from('filiais').select('name').order('name'),
                             supabase.from('equipamentos').select('plate').order('plate')
@@ -2100,8 +2098,8 @@
                         if (error) throw error;
                         
                         showToast("Lançamento criado com sucesso!", "success");
-                        setFormData(initialFormState); // Limpa o formulário
-                        fetchData(); // Atualiza a lista de "meus lançamentos"
+                        setFormData(initialFormState);
+                        fetchData();
                     } catch (err) {
                         showToast(`Erro ao salvar lançamento: ${err.message}`, "error");
                     }
@@ -2120,32 +2118,60 @@
                 };
 
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                    React.createElement('h2', { className: "text-2xl font-bold mb-4 text-center" }, "Solicitar Deslocamento"),
+                    React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center" }, "Solicitar Deslocamento"),
                     
-                    // Formulário sempre visível
-                    React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 p-4 border rounded-lg bg-gray-50" },
-                        React.createElement('select', { name: "placa", value: formData.placa, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, React.createElement('option', {value: ""}, "Selecione a Placa"), plates.map(p => React.createElement('option',{key:p, value:p},p))),
-                        React.createElement('select', { name: "filial_origem", value: formData.filial_origem, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, React.createElement('option', {value: ""}, "Selecione a Origem"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
-                        React.createElement('select', { name: "filial_destino", value: formData.filial_destino, onChange: handleInputChange, required: true, className:"p-2 border rounded" }, React.createElement('option', {value: ""}, "Selecione o Destino"), branches.map(b => React.createElement('option',{key:b, value:b},b))),
-                        React.createElement('textarea', { name: "observacao", value: formData.observacao, onChange: handleInputChange, placeholder:"Observação (opcional)", className:"p-2 border rounded md:col-span-full"}),
-                        React.createElement('div', { className: "md:col-span-full flex justify-end gap-4" },
-                            React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center", disabled: isLoading },
+                    // --- FORMULÁRIO COM VISUAL MELHORADO ---
+                    React.createElement('form', { 
+                        onSubmit: handleFormSubmit, 
+                        className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-6 border rounded-lg bg-gray-50" 
+                    },
+                        // Campo Placa
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: 'placa', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Placa do Equipamento'),
+                            React.createElement('select', { id: 'placa', name: "placa", value: formData.placa, onChange: handleInputChange, required: true, className:"w-full p-2 border border-gray-300 rounded-md shadow-sm" }, 
+                                React.createElement('option', {value: ""}, "Selecione..."), 
+                                plates.map(p => React.createElement('option',{key:p, value:p},p))
+                            )
+                        ),
+                        // Campo Origem
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: 'filial_origem', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Filial de Origem'),
+                            React.createElement('select', { id: 'filial_origem', name: "filial_origem", value: formData.filial_origem, onChange: handleInputChange, required: true, className:"w-full p-2 border border-gray-300 rounded-md shadow-sm" }, 
+                                React.createElement('option', {value: ""}, "Selecione..."), 
+                                branches.map(b => React.createElement('option',{key:b, value:b},b))
+                            )
+                        ),
+                        // Campo Destino
+                        React.createElement('div', null,
+                            React.createElement('label', { htmlFor: 'filial_destino', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Filial de Destino'),
+                            React.createElement('select', { id: 'filial_destino', name: "filial_destino", value: formData.filial_destino, onChange: handleInputChange, required: true, className:"w-full p-2 border border-gray-300 rounded-md shadow-sm" }, 
+                                React.createElement('option', {value: ""}, "Selecione..."), 
+                                branches.map(b => React.createElement('option',{key:b, value:b},b))
+                            )
+                        ),
+                        // Campo Observação
+                        React.createElement('div', { className: "md:col-span-3" },
+                            React.createElement('label', { htmlFor: 'observacao', className: 'block text-sm font-medium text-gray-700 mb-1' }, 'Observação (opcional)'),
+                            React.createElement('textarea', { id: 'observacao', name: "observacao", value: formData.observacao, onChange: handleInputChange, rows: 3, placeholder:"Digite aqui alguma informação adicional...", className:"w-full p-2 border border-gray-300 rounded-md shadow-sm" })
+                        ),
+                        // Botão de Envio
+                        React.createElement('div', { className: "md:col-span-3 flex justify-end" },
+                            React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center shadow-sm", disabled: isLoading },
                                 React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
                                 isLoading ? 'Enviando...' : 'Enviar Solicitação'
                             )
                         )
                     ),
                     
-                    // Tabela com apenas os lançamentos do usuário
-                    React.createElement('h3', { className: "text-xl font-semibold mb-4 border-t pt-4" }, "Meus Lançamentos Recentes"),
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Meus Lançamentos Recentes"),
                     React.createElement('div', { className: "overflow-x-auto" },
                         React.createElement('table', { className: "min-w-full bg-white text-sm" },
                             React.createElement('thead',{className:"bg-gray-100"}, 
                                 React.createElement('tr', null, ["Placa", "Origem", "Destino", "Status", "Data Solicitação", "Observação"].map(h => React.createElement('th',{key:h, className:"p-2 text-left"},h)))
                             ),
                             React.createElement('tbody', {className:"divide-y"}, 
-                                isLoading ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center"}, "Carregando...")) :
-                                myReleases.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Você ainda não fez nenhum lançamento.")) :
+                                isLoading && myReleases.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center"}, "Carregando...")) :
+                                !isLoading && myReleases.length === 0 ? React.createElement('tr', null, React.createElement('td', {colSpan:6, className:"p-4 text-center text-gray-500"}, "Você ainda não fez nenhum lançamento.")) :
                                 myReleases.map(r => React.createElement('tr', {key:r.id, className: "hover:bg-gray-50"},
                                     React.createElement('td',{className:"p-2"}, r.placa),
                                     React.createElement('td',{className:"p-2"}, r.filial_origem),
@@ -2927,6 +2953,7 @@
     </script>
 </body>
 </html>
+
 
 
 
