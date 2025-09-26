@@ -445,6 +445,18 @@
               const [editingEquipment, setEditingEquipment] = React.useState(null);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
+              const getTypeBadgeClasses = (type) => {
+                switch (type) {
+                case 'BOMBA':
+                    return 'bg-blue-100 text-blue-800';
+                case 'BETONEIRA':
+                    return 'bg-green-100 text-green-800';
+                case 'BOMBA LANÇA':
+                    return 'bg-yellow-100 text-yellow-800';
+                default:
+                    return 'bg-gray-100 text-gray-800';
+                }
+            };
               const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
 
               React.useEffect(() => {
@@ -539,58 +551,73 @@
                         React.createElement('button', { type: "button", onClick: () => setShowForm(false), className: "p-2 bg-gray-300 rounded" }, "Cancelar")
                     )
                 ),
-                React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-                /* ATUALIZADO: Wrapper da tabela */
-                React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
-                    /* ATUALIZADO: Tabela */
-                    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
-                        /* ATUALIZADO: Cabeçalho */
-                        React.createElement('thead', { className: "text-xs text-gray-700 uppercase bg-gray-100" }, 
-                            React.createElement('tr', null, 
-                                /* ATUALIZADO: Colunas do Cabeçalho */
-                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Placa"), 
-                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Modelo"),
-                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Marca"),
-                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Chassi"),
-                                React.createElement('th', {className: "px-4 py-3 font-semibold border-r border-gray-200 text-left"}, "Tipo"), 
-                                React.createElement('th', {className: "px-4 py-3 font-semibold text-center"}, "Ações") /* A última coluna não precisa de borda direita */
-                            )
+                /* INÍCIO DO CÓDIGO PARA SUBSTITUIR */
+
+React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
+    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
+        React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
+            React.createElement('tr', null, 
+                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Placa"), 
+                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Modelo"),
+                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Marca"),
+                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Chassi"),
+                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Tipo"), 
+                React.createElement('th', {className: "px-6 py-4 font-semibold text-right border-b-2 border-gray-200"}, "Ações")
+            )
+        ),
+        React.createElement('tbody', { className: "divide-y divide-gray-100" },
+            // Se não houver equipamentos, mostra uma mensagem
+            isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center" }, "Carregando...")) :
+            filteredEquipmentList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center text-gray-500" }, "Nenhum equipamento encontrado.")) :
+            
+            // Mapeia os equipamentos para as linhas da tabela
+            filteredEquipmentList.map(eq => (
+                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50 transition-colors" },
+                    
+                    // Lógica para modo de edição (se houver, manter simples)
+                    editingEquipment && editingEquipment.id === eq.id ?
+                    React.createElement(React.Fragment, null,
+                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
+                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
+                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
+                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
+                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
+                        React.createElement('td', { className: "p-2 text-right" },
+                            React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
+                            React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
+                        )
+                    ) :
+
+                    // Células de Visualização com o novo estilo
+                    React.createElement(React.Fragment, null,
+                        // Destaque na coluna Placa
+                        React.createElement('td', { className: "px-6 py-4" }, React.createElement('span', { className: "font-medium text-gray-800" }, eq.plate)),
+                        React.createElement('td', { className: "px-6 py-4" }, eq.model),
+                        React.createElement('td', { className: "px-6 py-4" }, eq.brand),
+                        React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
+                        // Tag colorida para o Tipo
+                        React.createElement('td', { className: "px-6 py-4" },
+                            React.createElement('span', {
+                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(eq.type)}`
+                            }, eq.type)
                         ),
-                        /* ATUALIZADO: Corpo da Tabela */
-                        React.createElement('tbody', { className: "divide-y divide-gray-100" },
-                            filteredEquipmentList.map(eq => (
-                                /* ATUALIZADO: Linha da Tabela */
-                                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50" },
-                                    editingEquipment && editingEquipment.id === eq.id ?
-                                    React.createElement(React.Fragment, null,
-                                        /* ATUALIZADO: Células de Edição */
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
-                                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
-                                        React.createElement('td', { className: "p-2 text-center" },
-                                          React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
-                                          React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
-                                        )
-                                    ) :
-                                    React.createElement(React.Fragment, null,
-                                        /* ATUALIZADO: Células de Dados */
-                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.plate),
-                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.model),
-                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.brand),
-                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.chassis),
-                                        React.createElement('td', { className: "px-4 py-3 border-r border-gray-200" }, eq.type),
-                                        React.createElement('td', { className: "px-4 py-3 text-center" }, /* A última célula não precisa de borda */
-                                            React.createElement('button', {onClick: ()=>handleEditClick(eq), className:"text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Edit'})),
-                                            React.createElement('button', {onClick: ()=>confirmDeleteEquipment(eq), className:"text-red-600 p-1 hover:bg-red-100 rounded-full"}, React.createElement(LucideIcon, {name: 'Trash2'}))
-                                        )
-                                    )
+                        // Ícones de ação aprimorados
+                        React.createElement('td', { className: "px-6 py-4" },
+                            React.createElement('div', { className: "flex justify-end gap-x-4" },
+                                React.createElement('button', { onClick: () => handleEditClick(eq), className: "text-gray-400 hover:text-blue-600 transition-colors" }, 
+                                    React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })
+                                ),
+                                React.createElement('button', { onClick: () => confirmDeleteEquipment(eq), className: "text-gray-400 hover:text-red-600 transition-colors" },
+                                    React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' })
                                 )
-                            ))
+                            )
                         )
                     )
-                ),
+                )
+            ))
+        )
+    )
+),
                 showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir equipamento placa "${equipmentToDelete?.plate}"?`, onConfirm: handleDeleteEquipment, onCancel: () => setShowConfirmModal(false) })
               );
             }
@@ -3041,6 +3068,7 @@
     </script>
 </body>
 </html>
+
 
 
 
