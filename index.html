@@ -2899,10 +2899,12 @@
                                      React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
                                         React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
                                         React.createElement(MenuItem, { page: 'displacementReleases', icon: 'Truck', text: 'Lanç. Deslocamento' }),
-                                        React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'UserCheck', text: 'Aprovação Desloc.' }),
                                         React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
                                         React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Despesa' })
                                      ),
+                                     React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
+                                        React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'FileText', text: 'Aprovação' })
+                                     ),               
                                      React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
                                         React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
                                         React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
@@ -2953,6 +2955,7 @@
     </script>
 </body>
 </html>
+
 
 
 
