@@ -9,6 +9,12 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     
     <style>
+        .login-bg-image {
+            background-image: url('https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/sign/LOGINPAGE/LONGINPAGE_TERSYS.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84ODJhZWJjZi1kNWNhLTQ4ODItODEyMi03YzJjMDA3ZDUzZGMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJMT0dJTlBBR0UvTE9OR0lOUEFHRV9URVJTWVMucG5nIiwiaWF0IjoxNzU4ODkxNzQ1LCJleHAiOjI1NDcyOTE3NDV9.Cc5Vnm4d8hgOy0PCgnaKr5P-PTk5emO6-FDW56SjCaI');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -192,24 +198,55 @@
               };
 
               return (
-                React.createElement('div', { className: "flex items-center justify-center min-h-screen bg-gray-100" },
-                  React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-lg w-full max-w-md" },
-                    React.createElement('div', { className: "flex justify-center mb-6" },
-                        React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-45 w-auto" })
-                    ),
-                    error && React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" }, error),
-                    React.createElement('form', { onSubmit: handleLogin },
-                      React.createElement('div', { className: "mb-4" },
-                        React.createElement('label', { htmlFor: "username", className: "block text-sm font-medium text-gray-700" }, "Usuário"),
-                        React.createElement('input', { type: "text", id: "username", value: username, onChange: (e) => setUsername(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm", placeholder: "Seu usuário", required: true, disabled: isLoggingIn })
+                React.createElement('div', { className: "min-h-screen flex" },
+                  // Coluna do Formulário (Esquerda)
+                  React.createElement('div', { className: "w-full lg:w-1/2 flex items-center justify-center p-8 bg-white" },
+                    React.createElement('div', { className: "max-w-md w-full" },
+                      React.createElement('div', { className: "flex justify-center mb-6" },
+                        React.createElement('img', { 
+                          src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", 
+                          alt: "TERSYS Logo", 
+                          className: "h-28 w-auto" // Ajustei o tamanho para um visual melhor
+                        })
                       ),
-                      React.createElement('div', { className: "mb-6" },
-                        React.createElement('label', { htmlFor: "password", className: "block text-sm font-medium text-gray-700" }, "Senha"),
-                        React.createElement('input', { type: "password", id: "password", value: password, onChange: (e) => setPassword(e.target.value), className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm", placeholder: "Sua senha", required: true, disabled: isLoggingIn })
-                      ),
-                      React.createElement('button', { type: "submit", className: "w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700", disabled: isLoggingIn }, isLoggingIn ? 'Entrando...' : 'Entrar')
+                      error && React.createElement('div', { className: "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center mb-4" }, error),
+                      React.createElement('form', { onSubmit: handleLogin, className: "space-y-6" },
+                        React.createElement('div', null,
+                          React.createElement('label', { htmlFor: "username", className: "block text-sm font-medium text-gray-700" }, "Usuário"),
+                          React.createElement('input', { 
+                            type: "text", 
+                            id: "username", 
+                            value: username, 
+                            onChange: (e) => setUsername(e.target.value), 
+                            className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500", 
+                            placeholder: "Seu usuário", 
+                            required: true, 
+                            disabled: isLoggingIn 
+                          })
+                        ),
+                        React.createElement('div', null,
+                          React.createElement('label', { htmlFor: "password", className: "block text-sm font-medium text-gray-700" }, "Senha"),
+                          React.createElement('input', { 
+                            type: "password", 
+                            id: "password", 
+                            value: password, 
+                            onChange: (e) => setPassword(e.target.value), 
+                            className: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500", 
+                            placeholder: "Sua senha", 
+                            required: true, 
+                            disabled: isLoggingIn 
+                          })
+                        ),
+                        React.createElement('button', { 
+                          type: "submit", 
+                          className: "w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50", 
+                          disabled: isLoggingIn 
+                        }, isLoggingIn ? 'Entrando...' : 'Entrar')
+                      )
                     )
-                  )
+                  ),
+                  // Coluna da Imagem (Direita)
+                  React.createElement('div', { className: "hidden lg:block lg:w-1/2 login-bg-image" })
                 )
               );
             }
@@ -2955,6 +2992,7 @@
     </script>
 </body>
 </html>
+
 
 
 
