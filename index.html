@@ -1623,12 +1623,12 @@ React.createElement('div', { className: "rounded-lg border border-slate-200 shad
                         className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(r.tipoEquipamento)}`
                     }, r.tipoEquipamento)
                 ),
-                React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate)) // Última coluna não precisa da borda
-            ))
-        )
-    )
-);
-            }
+                            React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate)) // Última coluna não precisa da borda
+                            ))
+                        )
+                    )
+                )
+        
 
             function OutsourcingDistribution({ userId, showToast, setCurrentPage }) {
                 const [branchesByResponsible, setBranchesByResponsible] = React.useState({});
@@ -3090,6 +3090,7 @@ React.createElement('div', { className: "rounded-lg border border-slate-200 shad
     </script>
 </body>
 </html>
+
 
 
 
