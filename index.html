@@ -1165,12 +1165,9 @@ function ConcessionManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ContractManagement */
-
-/* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ContractManagement */
 
 function ContractManagement({ userId, userRole, showToast }) {
-    // ATUALIZADO: Categoria inicial alterada
+    // A variável 'category' é definida aqui, no estado do componente.
     const [category, setCategory] = React.useState('Concessão de Placa (Entrada)');
     const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
     const [formData, setFormData] = React.useState(initialFormState);
@@ -1180,7 +1177,6 @@ function ContractManagement({ userId, userRole, showToast }) {
     const [history, setHistory] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    // ATUALIZADO: Nomes das categorias nas tags
     const getCategoryBadge = (category) => {
         const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
         switch (category) {
@@ -1255,7 +1251,6 @@ function ContractManagement({ userId, userRole, showToast }) {
             const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
             if (contractError) throw contractError;
             
-            // ATUALIZADO: Cases com os novos nomes
             switch (category) {
                 case 'Concessão de Placa (Entrada)':
                     const { error: hireError } = await supabase.from('concessao').insert([{
@@ -1292,7 +1287,7 @@ function ContractManagement({ userId, userRole, showToast }) {
             setFormData(initialFormState);
             fetchInitialData();
         } catch (err) {
-            showToast(`Erro na operação: ${err.message}`, 'error');
+            showToast(`Erro na operação: ${err.message}`, "error");
         }
         setIsLoading(false);
     };
@@ -1356,11 +1351,11 @@ function ContractManagement({ userId, userRole, showToast }) {
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
         React.createElement('div', { className: "mb-6" },
             React.createElement('div', { className: "flex justify-center border-b" },
-                // ATUALIZADO: Nomes dos botões/abas
                 ['Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
                     React.createElement('button', {
                         key: cat,
                         onClick: () => { setCategory(cat); setFormData(initialFormState); },
+                        // A variável 'category' é usada aqui para destacar a aba ativa
                         className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
                     }, cat)
                 ))
@@ -1375,55 +1370,6 @@ function ContractManagement({ userId, userRole, showToast }) {
             )
         ),
         React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
-        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
-            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
-                    React.createElement('tr', null,
-                        ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
-                    )
-                ),
-                React.createElement('tbody', null,
-                    isLoading && history.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
-                    history.map(rec => React.createElement('tr', { key: rec.id, className: "hover:bg-blue-50 even:bg-slate-50" },
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
-                            React.createElement('span', { className: 'font-medium text-slate-800' }, formatDate(rec.data_alteracao))
-                        ),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, getCategoryBadge(rec.categoria)),
-                        React.createElement('td', { className: "px-6 py-4" }, rec.atraso)
-                    ))
-                )
-            )
-        )
-    );
-}
-
-/* FIM DO CÓDIGO CORRIGIDO */
-
-    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
-        React.createElement('div', { className: "mb-6" },
-            React.createElement('div', { className: "flex justify-center border-b" },
-                ['Contratação', 'Troca de Placa', 'Encerramento', 'Encerramento de Placa'].map(cat => (
-                    React.createElement('button', {
-                        key: cat,
-                        onClick: () => { setCategory(cat); setFormData(initialFormState); },
-                        className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
-                    }, cat)
-                ))
-            )
-        ),
-        React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
-            renderFormFields(),
-            React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
-                React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition", disabled: isLoading },
-                    isLoading ? 'Processando...' : 'Executar Operação'
-                )
-            )
-        ),
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
-        
-        // ATUALIZADO: Tabela com novo estilo
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
@@ -3296,6 +3242,7 @@ function TurnoverDashboard({ showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
