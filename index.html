@@ -252,184 +252,191 @@
               );
             }
 
-            function BranchManagement({ userId, userRole, showToast }) {
-                const [newBranchName, setNewBranchName] = React.useState('');
-                const [branches, setBranches] = React.useState([]);
-                const [responsibleInput, setResponsibleInput] = React.useState("");
-                const [error, setError] = React.useState(null);
-                const [isLoading, setIsLoading] = React.useState(false);
-                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-                const [branchToDelete, setBranchToDelete] = React.useState(null);
-                const [editingBranch, setEditingBranch] = React.useState(null);
-                const [originalBranch, setOriginalBranch] = React.useState(null);
-                const [availableSupervisors, setAvailableSupervisors] = React.useState([]);
+            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO BranchManagement */
 
-                React.useEffect(() => {
-                    const fetchBranchesAndSupervisors = async () => {
-                        setIsLoading(true);
-                        try {
-                            const query = supabase.from('filiais').select('*').order('created_at', { ascending: false });
-                            if (userRole === 'supervisor') query.eq('responsible', userId);
-                            const { data: branchesData, error: branchesError } = await query;
-                            if (branchesError) throw branchesError;
-                            setBranches(branchesData);
+function BranchManagement({ userId, userRole, showToast }) {
+    const [newBranchName, setNewBranchName] = React.useState('');
+    const [branches, setBranches] = React.useState([]);
+    const [responsibleInput, setResponsibleInput] = React.useState("");
+    const [error, setError] = React.useState(null);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+    const [branchToDelete, setBranchToDelete] = React.useState(null);
+    const [editingBranch, setEditingBranch] = React.useState(null);
+    const [originalBranch, setOriginalBranch] = React.useState(null);
+    const [availableSupervisors, setAvailableSupervisors] = React.useState([]);
 
-                            const { data: supervisorsData, error: supervisorsError } = await supabase.from('app_users').select('username').eq('role', 'supervisor').order('username');
-                            if (supervisorsError) throw supervisorsError;
-                            setAvailableSupervisors(supervisorsData.map(u => u.username));
-                        } catch (err) {
-                            showToast("Erro ao carregar dados.", "error");
-                        }
-                        setIsLoading(false);
-                    };
-                    fetchBranchesAndSupervisors();
-                }, [userId, userRole, showToast]);
+    React.useEffect(() => {
+        const fetchBranchesAndSupervisors = async () => {
+            setIsLoading(true);
+            try {
+                const query = supabase.from('filiais').select('*').order('created_at', { ascending: false });
+                if (userRole === 'supervisor') query.eq('responsible', userId);
+                const { data: branchesData, error: branchesError } = await query;
+                if (branchesError) throw branchesError;
+                setBranches(branchesData);
 
-                const handleAddBranch = async (e) => {
-                    e.preventDefault();
-                    if (!newBranchName.trim() || !responsibleInput.trim()) {
-                        showToast("Preencha todos os campos.", "error");
-                        return;
-                    }
-                    setIsLoading(true);
-                    try {
-                        const { data: existing } = await supabase.from('filiais').select('id').ilike('name', newBranchName.trim());
-                        if (existing && existing.length > 0) {
-                            showToast("Filial já existe.", "error");
-                            setIsLoading(false);
-                            return;
-                        }
-                        await supabase.from('filiais').insert([{ name: newBranchName.trim(), created_by_username: userId, responsible: responsibleInput.trim() }]);
-                        showToast("Filial adicionada com sucesso!", "success");
-                        setNewBranchName('');
-                        setResponsibleInput("");
-                        const { data } = await supabase.from('filiais').select('*').order('created_at', { ascending: false });
-                        setBranches(data);
-                    } catch (err) {
-                        showToast("Erro ao adicionar filial.", "error");
-                    }
-                    setIsLoading(false);
-                };
+                const { data: supervisorsData, error: supervisorsError } = await supabase.from('app_users').select('username').eq('role', 'supervisor').order('username');
+                if (supervisorsError) throw supervisorsError;
+                setAvailableSupervisors(supervisorsData.map(u => u.username));
+            } catch (err) {
+                showToast("Erro ao carregar dados.", "error");
+            }
+            setIsLoading(false);
+        };
+        fetchBranchesAndSupervisors();
+    }, [userId, userRole, showToast]);
 
-                const handleEditClick = (branch) => {
-                    setEditingBranch({ ...branch });
-                    setOriginalBranch({ ...branch });
-                };
+    const handleAddBranch = async (e) => {
+        e.preventDefault();
+        if (!newBranchName.trim() || !responsibleInput.trim()) {
+            showToast("Preencha todos os campos.", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const { data: existing } = await supabase.from('filiais').select('id').ilike('name', newBranchName.trim());
+            if (existing && existing.length > 0) {
+                showToast("Filial já existe.", "error");
+                setIsLoading(false);
+                return;
+            }
+            await supabase.from('filiais').insert([{ name: newBranchName.trim(), created_by_username: userId, responsible: responsibleInput.trim() }]);
+            showToast("Filial adicionada com sucesso!", "success");
+            setNewBranchName('');
+            setResponsibleInput("");
+            const { data } = await supabase.from('filiais').select('*').order('created_at', { ascending: false });
+            setBranches(data);
+        } catch (err) {
+            showToast("Erro ao adicionar filial.", "error");
+        }
+        setIsLoading(false);
+    };
 
-                const handleCancelEdit = () => {
-                    setEditingBranch(null);
-                    setOriginalBranch(null);
-                };
+    const handleEditClick = (branch) => {
+        setEditingBranch({ ...branch });
+        setOriginalBranch({ ...branch });
+    };
 
-                const handleUpdateBranch = async () => {
-                    if (!editingBranch || !editingBranch.name.trim() || !editingBranch.responsible.trim()) {
-                        showToast("Preencha todos os campos.", "error");
-                        return;
-                    }
-                    setIsLoading(true);
-                    try {
-                        const { data: existing } = await supabase.from('filiais').select('id').ilike('name', editingBranch.name.trim()).neq('id', editingBranch.id);
-                        if (existing && existing.length > 0) {
-                            showToast("Nome de filial duplicado.", "error");
-                            setIsLoading(false);
-                            return;
-                        }
-                        await supabase.from('filiais').update({ name: editingBranch.name.trim(), responsible: editingBranch.responsible.trim() }).eq('id', editingBranch.id);
-                        showToast("Filial atualizada com sucesso!", "success");
-                        setEditingBranch(null);
-                        const { data } = await supabase.from('filiais').select('*').order('created_at', { ascending: false });
-                        setBranches(data);
-                    } catch (err) {
-                        showToast("Erro ao atualizar filial.", "error");
-                    }
-                    setIsLoading(false);
-                };
+    const handleCancelEdit = () => {
+        setEditingBranch(null);
+        setOriginalBranch(null);
+    };
 
-                const handleFieldChange = (e, fieldName) => setEditingBranch(prev => ({ ...prev, [fieldName]: e.target.value }));
-                
-                const confirmDeleteBranch = (branch) => {
-                    setBranchToDelete(branch);
-                    setShowConfirmModal(true);
-                };
+    const handleUpdateBranch = async () => {
+        if (!editingBranch || !editingBranch.name.trim() || !editingBranch.responsible.trim()) {
+            showToast("Preencha todos os campos.", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const { data: existing } = await supabase.from('filiais').select('id').ilike('name', editingBranch.name.trim()).neq('id', editingBranch.id);
+            if (existing && existing.length > 0) {
+                showToast("Nome de filial duplicado.", "error");
+                setIsLoading(false);
+                return;
+            }
+            await supabase.from('filiais').update({ name: editingBranch.name.trim(), responsible: editingBranch.responsible.trim() }).eq('id', editingBranch.id);
+            showToast("Filial atualizada com sucesso!", "success");
+            setEditingBranch(null);
+            const { data } = await supabase.from('filiais').select('*').order('created_at', { ascending: false });
+            setBranches(data);
+        } catch (err) {
+            showToast("Erro ao atualizar filial.", "error");
+        }
+        setIsLoading(false);
+    };
 
-                const handleDeleteBranch = async () => {
-                    if (!branchToDelete) return;
-                    setIsLoading(true);
-                    try {
-                        await supabase.from('filiais').delete().eq('id', branchToDelete.id);
-                        showToast("Filial excluída com sucesso!", "success");
-                        const { data } = await supabase.from('filiais').select('*').order('created_at', { ascending: false });
-                        setBranches(data);
-                    } catch (err) {
-                        showToast("Erro ao excluir filial.", "error");
-                    }
-                    setIsLoading(false);
-                    setShowConfirmModal(false);
-                    setBranchToDelete(null);
-                };
+    const handleFieldChange = (e, fieldName) => setEditingBranch(prev => ({ ...prev, [fieldName]: e.target.value }));
+    
+    const confirmDeleteBranch = (branch) => {
+        setBranchToDelete(branch);
+        setShowConfirmModal(true);
+    };
 
-                return (
-                    React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Filiais"),
-                        error && React.createElement('div', { className: "bg-red-100 text-red-700 p-3 rounded mb-4" }, error),
-                        React.createElement('form', { onSubmit: handleAddBranch, className: "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" },
-                            React.createElement('input', { type: "text", value: newBranchName, onChange: (e) => setNewBranchName(e.target.value), className: "w-full p-2 border rounded", placeholder: "Nome da nova filial", required: true, disabled: isLoading }),
-                            React.createElement('div', { className: "relative" },
-                                React.createElement('select', { value: responsibleInput, onChange: (e) => setResponsibleInput(e.target.value), className: "w-full p-2 border rounded appearance-none pr-8", required: true, disabled: isLoading },
-                                    React.createElement('option', { value: "" }, "Selecione um Responsável"),
-                                    availableSupervisors.map(name => React.createElement('option', { key: name, value: name }, name))
+    const handleDeleteBranch = async () => {
+        if (!branchToDelete) return;
+        setIsLoading(true);
+        try {
+            await supabase.from('filiais').delete().eq('id', branchToDelete.id);
+            showToast("Filial excluída com sucesso!", "success");
+            const { data } = await supabase.from('filiais').select('*').order('created_at', { ascending: false });
+            setBranches(data);
+        } catch (err) {
+            showToast("Erro ao excluir filial.", "error");
+        }
+        setIsLoading(false);
+        setShowConfirmModal(false);
+        setBranchToDelete(null);
+    };
+
+    return (
+        React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+            React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Filiais"),
+            error && React.createElement('div', { className: "bg-red-100 text-red-700 p-3 rounded mb-4" }, error),
+            React.createElement('form', { onSubmit: handleAddBranch, className: "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" },
+                React.createElement('input', { type: "text", value: newBranchName, onChange: (e) => setNewBranchName(e.target.value), className: "w-full p-2 border rounded", placeholder: "Nome da nova filial", required: true, disabled: isLoading }),
+                React.createElement('div', { className: "relative" },
+                    React.createElement('select', { value: responsibleInput, onChange: (e) => setResponsibleInput(e.target.value), className: "w-full p-2 border rounded appearance-none pr-8", required: true, disabled: isLoading },
+                        React.createElement('option', { value: "" }, "Selecione um Responsável"),
+                        availableSupervisors.map(name => React.createElement('option', { key: name, value: name }, name))
+                    ),
+                    React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2" })
+                ),
+                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded hover:bg-blue-700", disabled: isLoading }, isLoading ? 'Adicionando...' : 'Adicionar Filial')
+            ),
+            
+            // ATUALIZADO: Tabela com novo estilo
+            React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                    React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                        React.createElement('tr', null,
+                            React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, "Filial"),
+                            React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, "Responsável"),
+                            React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
+                        )
+                    ),
+                    React.createElement('tbody', null,
+                        isLoading && branches.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "3", className: "p-4 text-center" }, "Carregando...")) :
+                        branches.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "3", className: "p-4 text-center" }, "Nenhuma filial cadastrada.")) :
+                        branches.map(branch => (
+                            React.createElement('tr', { key: branch.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" },
+                                    editingBranch && editingBranch.id === branch.id ?
+                                    React.createElement('input', { type: "text", value: editingBranch.name, onChange: (e) => handleFieldChange(e, 'name'), className: "p-2 border rounded w-full" }) :
+                                    React.createElement('span', { className: 'font-medium text-slate-800' }, branch.name)
                                 ),
-                                React.createElement(LucideIcon, { name: "ChevronDown", className: "h-5 w-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2" })
-                            ),
-                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded hover:bg-blue-700", disabled: isLoading }, isLoading ? 'Adicionando...' : 'Adicionar Filial')
-                        ),
-                        React.createElement('div', { className: "overflow-x-auto" },
-                            React.createElement('table', { className: "min-w-full bg-white" },
-                                React.createElement('thead', { className: "bg-gray-100" },
-                                    React.createElement('tr', null,
-                                        React.createElement('th', { className: "px-6 py-3 text-left" }, "Filial"),
-                                        React.createElement('th', { className: "px-6 py-3 text-left" }, "Responsável"),
-                                        React.createElement('th', { className: "px-6 py-3 text-right" }, "Ações")
-                                    )
+                                React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" },
+                                    editingBranch && editingBranch.id === branch.id ?
+                                    React.createElement('select', { value: editingBranch.responsible, onChange: (e) => handleFieldChange(e, 'responsible'), className: "p-2 border rounded w-full" },
+                                        React.createElement('option', { value: "" }, "Selecione"),
+                                        availableSupervisors.map(name => React.createElement('option', { key: name, value: name }, name))
+                                    ) : (branch.responsible || 'N/A')
                                 ),
-                                React.createElement('tbody', { className: "divide-y" },
-                                    isLoading && branches.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "3", className: "p-4 text-center" }, "Carregando...")) :
-                                    branches.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "3", className: "p-4 text-center" }, "Nenhuma filial cadastrada.")) :
-                                    branches.map(branch => (
-                                        React.createElement('tr', { key: branch.id },
-                                            React.createElement('td', { className: "px-6 py-4" },
-                                                editingBranch && editingBranch.id === branch.id ?
-                                                React.createElement('input', { type: "text", value: editingBranch.name, onChange: (e) => handleFieldChange(e, 'name'), className: "p-2 border rounded w-full" }) :
-                                                branch.name
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4" },
-                                                editingBranch && editingBranch.id === branch.id ?
-                                                React.createElement('select', { value: editingBranch.responsible, onChange: (e) => handleFieldChange(e, 'responsible'), className: "p-2 border rounded w-full" },
-                                                   React.createElement('option', { value: "" }, "Selecione"),
-                                                   availableSupervisors.map(name => React.createElement('option', { key: name, value: name }, name))
-                                                ) :
-                                                branch.responsible || 'N/A'
-                                            ),
-                                            React.createElement('td', { className: "px-6 py-4 text-right" },
-                                                editingBranch && editingBranch.id === branch.id ?
-                                                React.createElement(React.Fragment, null,
-                                                    React.createElement('button', { onClick: handleUpdateBranch, className: "text-green-600 mr-2", title: "Salvar" }, React.createElement(LucideIcon, {name: 'Save'})),
-                                                    React.createElement('button', { onClick: handleCancelEdit, className: "text-gray-600", title: "Cancelar" }, React.createElement(LucideIcon, {name: 'Ban'}))
-                                                ) :
-                                                React.createElement(React.Fragment, null,
-                                                    React.createElement('button', { onClick: () => handleEditClick(branch), className: "text-blue-600 mr-2", title: "Editar" }, React.createElement(LucideIcon, {name: 'Edit'})),
-                                                    React.createElement('button', { onClick: () => confirmDeleteBranch(branch), className: "text-red-600", title: "Excluir" }, React.createElement(LucideIcon, {name: 'Trash2'}))
-                                                )
-                                            )
+                                React.createElement('td', { className: "px-6 py-4 text-center" },
+                                    React.createElement('div', { className: "flex justify-center gap-x-4" },
+                                        editingBranch && editingBranch.id === branch.id ?
+                                        React.createElement(React.Fragment, null,
+                                            React.createElement('button', { onClick: handleUpdateBranch, className: "text-gray-400 hover:text-green-600 transition-colors", title: "Salvar" }, React.createElement(LucideIcon, {name: 'Save', className: 'h-5 w-5'})),
+                                            React.createElement('button', { onClick: handleCancelEdit, className: "text-gray-400 hover:text-gray-600 transition-colors", title: "Cancelar" }, React.createElement(LucideIcon, {name: 'Ban', className: 'h-5 w-5'}))
+                                        ) :
+                                        React.createElement(React.Fragment, null,
+                                            React.createElement('button', { onClick: () => handleEditClick(branch), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, {name: 'Edit', className: 'h-5 w-5'})),
+                                            React.createElement('button', { onClick: () => confirmDeleteBranch(branch), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Excluir" }, React.createElement(LucideIcon, {name: 'Trash2', className: 'h-5 w-5'}))
                                         )
-                                    ))
+                                    )
                                 )
                             )
-                        ),
-                        showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja excluir a filial "${branchToDelete?.name}"?`, onConfirm: handleDeleteBranch, onCancel: () => setShowConfirmModal(false) })
+                        ))
                     )
-                );
-            }
+                )
+            ),
+            showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja excluir a filial "${branchToDelete?.name}"?`, onConfirm: handleDeleteBranch, onCancel: () => setShowConfirmModal(false) })
+        )
+    );
+}
+
+/* FIM DO CÓDIGO CORRIGIDO */
 
             function EquipmentManagement({ userId, showToast }) {
               const [newPlate, setNewPlate] = React.useState('');
@@ -622,778 +629,575 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
               );
             }
 
-            function UserManagement({ userId, showToast }) {
-              const [newUsername, setNewUsername] = React.useState('');
-              const [newFullname, setNewFullname] = React.useState('');
-              const [newPassword, setNewPassword] = React.useState('');
-              const [newUserRole, setNewUserRole] = React.useState('usuario');
-              const [usersList, setUsersList] = React.useState([]);
-              const [isLoading, setIsLoading] = React.useState(false);
-              const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-              const [userToDelete, setUserToDelete] = React.useState(null);
-              const roles = ['administrador', 'supervisor', 'usuario'];
+            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO UserManagement */
 
-              React.useEffect(() => {
-                const fetchUsers = async () => {
-                  setIsLoading(true);
-                  try {
-                    const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
-                    if (error) throw error;
-                    setUsersList(data);
-                  } catch (e) {
-                    showToast("Erro ao carregar usuários.", "error");
-                  }
-                  setIsLoading(false);
-                };
-                fetchUsers();
-              }, [showToast]);
+function UserManagement({ userId, showToast }) {
+    const [newUsername, setNewUsername] = React.useState('');
+    const [newFullname, setNewFullname] = React.useState('');
+    const [newPassword, setNewPassword] = React.useState('');
+    const [newUserRole, setNewUserRole] = React.useState('usuario');
+    const [usersList, setUsersList] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+    const [userToDelete, setUserToDelete] = React.useState(null);
+    const roles = ['administrador', 'supervisor', 'usuario'];
 
-              const handleAddUser = async (e) => {
-                e.preventDefault();
-                if (!newUsername.trim() || !newFullname.trim() || !newPassword.trim()) { 
-                    showToast("Preencha todos os campos.", "error");
-                    return; 
-                }
-                setIsLoading(true);
-                try {
-                  const { data: existing } = await supabase.from('app_users').select('username').eq('username', newUsername.trim());
-                  if (existing && existing.length > 0) { 
-                      showToast("Nome de usuário já existe.", "error");
-                      setIsLoading(false); 
-                      return; 
-                  }
-                  await supabase.from('app_users').insert([{ 
-                      username: newUsername.trim(), 
-                      fullname: newFullname.trim(), 
-                      password: newPassword, 
-                      role: newUserRole 
-                  }]);
-                  showToast("Usuário adicionado!", "success");
-                  setNewUsername(''); 
-                  setNewFullname('');
-                  setNewPassword(''); 
-                  setNewUserRole('usuario');
-                  const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
-                  setUsersList(data);
-                } catch(e) {
-                   showToast("Erro ao adicionar usuário.", "error");
-                }
-                setIsLoading(false);
-              };
+    // NOVO: Função para criar a "tag" de função/role
+    const getRoleBadge = (role) => {
+        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium capitalize";
+        switch (role) {
+            case 'administrador':
+                return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, role);
+            case 'supervisor':
+                return React.createElement('span', { className: `bg-blue-100 text-blue-800 ${baseClasses}` }, role);
+            case 'usuario':
+            default:
+                return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, role);
+        }
+    };
 
-              const confirmDeleteUser = (user) => { setUserToDelete(user); setShowConfirmModal(true); };
-
-              const handleDeleteUser = async () => {
-                if (!userToDelete) return;
-                setIsLoading(true);
-                try {
-                    await supabase.from('app_users').delete().eq('id', userToDelete.id);
-                    showToast("Usuário excluído!", "success");
-                    const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
-                    setUsersList(data);
-                } catch(e) {
-                    showToast("Erro ao excluir usuário.", "error");
-                }
-                setIsLoading(false);
-                setShowConfirmModal(false);
-                setUserToDelete(null);
-              };
-
-              return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Usuários"),
-                React.createElement('form', { onSubmit: handleAddUser, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" },
-                  React.createElement('input', { placeholder: "Nome de Usuário", value: newUsername, onChange: e => setNewUsername(e.target.value), className: "p-2 border rounded" }),
-                  React.createElement('input', { placeholder: "Nome Completo", value: newFullname, onChange: e => setNewFullname(e.target.value), className: "p-2 border rounded" }),
-                  React.createElement('input', { type: "password", placeholder: "Senha", value: newPassword, onChange: e => setNewPassword(e.target.value), className: "p-2 border rounded" }),
-                  React.createElement('select', { value: newUserRole, onChange: e => setNewUserRole(e.target.value), className: "p-2 border rounded" }, roles.map(r => React.createElement('option', { key: r, value: r }, r.charAt(0).toUpperCase() + r.slice(1)))),
-                  React.createElement('div', { className: "lg:col-span-3 flex justify-center" }, React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded w-full md:w-auto" }, "Adicionar Usuário"))
-                ),
-                React.createElement('div', { className: "overflow-x-auto" },
-                  React.createElement('table', { className: "min-w-full bg-white" },
-                    React.createElement('thead', { className: "bg-gray-100" }, React.createElement('tr', null, 
-                        React.createElement('th', {className:"p-2 text-left"}, "Usuário"), 
-                        React.createElement('th', {className:"p-2 text-left"}, "Nome Completo"), 
-                        React.createElement('th', {className:"p-2 text-left"}, "Função"), 
-                        React.createElement('th', {className:"p-2 text-right"}, "Ações")
-                    )),
-                    React.createElement('tbody', { className: "divide-y" }, usersList.map(user => React.createElement('tr', { key: user.id },
-                      React.createElement('td', {className:"p-2"}, user.username),
-                      React.createElement('td', {className:"p-2"}, user.fullname),
-                      React.createElement('td', {className:"p-2 capitalize"}, user.role),
-                      React.createElement('td', {className:"p-2 text-right"}, React.createElement('button', { onClick: () => confirmDeleteUser(user), className: "text-red-600" }, React.createElement(LucideIcon, {name: 'Trash2'})))
-                    )))
-                  )
-                ),
-                showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir usuário "${userToDelete?.username}"?`, onConfirm: handleDeleteUser, onCancel: () => setShowConfirmModal(false) })
-              );
+    React.useEffect(() => {
+        const fetchUsers = async () => {
+            setIsLoading(true);
+            try {
+                const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                setUsersList(data);
+            } catch (e) {
+                showToast("Erro ao carregar usuários.", "error");
             }
-function ThirdPartyManagement({ userId, showToast }) {
-    const [terceirosList, setTerceirosList] = React.useState([]);
+            setIsLoading(false);
+        };
+        fetchUsers();
+    }, [showToast]);
+
+    const handleAddUser = async (e) => {
+        e.preventDefault();
+        if (!newUsername.trim() || !newFullname.trim() || !newPassword.trim()) { 
+            showToast("Preencha todos os campos.", "error");
+            return; 
+        }
+        setIsLoading(true);
+        try {
+            const { data: existing } = await supabase.from('app_users').select('username').eq('username', newUsername.trim());
+            if (existing && existing.length > 0) { 
+                showToast("Nome de usuário já existe.", "error");
+                setIsLoading(false); 
+                return; 
+            }
+            await supabase.from('app_users').insert([{ 
+                username: newUsername.trim(), 
+                fullname: newFullname.trim(), 
+                password: newPassword, 
+                role: newUserRole 
+            }]);
+            showToast("Usuário adicionado!", "success");
+            setNewUsername(''); 
+            setNewFullname('');
+            setNewPassword(''); 
+            setNewUserRole('usuario');
+            const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+            setUsersList(data);
+        } catch(e) {
+            showToast("Erro ao adicionar usuário.", "error");
+        }
+        setIsLoading(false);
+    };
+
+    const confirmDeleteUser = (user) => { setUserToDelete(user); setShowConfirmModal(true); };
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsLoading(true);
+        try {
+            await supabase.from('app_users').delete().eq('id', userToDelete.id);
+            showToast("Usuário excluído!", "success");
+            const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+            setUsersList(data);
+        } catch(e) {
+            showToast("Erro ao excluir usuário.", "error");
+        }
+        setIsLoading(false);
+        setShowConfirmModal(false);
+        setUserToDelete(null);
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Usuários"),
+        React.createElement('form', { onSubmit: handleAddUser, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" },
+            React.createElement('input', { placeholder: "Nome de Usuário", value: newUsername, onChange: e => setNewUsername(e.target.value), className: "p-2 border rounded" }),
+            React.createElement('input', { placeholder: "Nome Completo", value: newFullname, onChange: e => setNewFullname(e.target.value), className: "p-2 border rounded" }),
+            React.createElement('input', { type: "password", placeholder: "Senha", value: newPassword, onChange: e => setNewPassword(e.target.value), className: "p-2 border rounded" }),
+            React.createElement('select', { value: newUserRole, onChange: e => setNewUserRole(e.target.value), className: "p-2 border rounded" }, roles.map(r => React.createElement('option', { key: r, value: r }, r.charAt(0).toUpperCase() + r.slice(1)))),
+            React.createElement('div', { className: "lg:col-span-3 flex justify-center" }, React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded w-full md:w-auto" }, "Adicionar Usuário"))
+        ),
+        
+        // ATUALIZADO: Tabela com novo estilo
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" }, 
+                    React.createElement('tr', null, 
+                        React.createElement('th', {className:"px-6 py-4 font-semibold border-b border-r border-slate-200"}, "Usuário"), 
+                        React.createElement('th', {className:"px-6 py-4 font-semibold border-b border-r border-slate-200"}, "Nome Completo"), 
+                        React.createElement('th', {className:"px-6 py-4 font-semibold border-b border-r border-slate-200"}, "Função"), 
+                        React.createElement('th', {className:"px-6 py-4 font-semibold border-b border-slate-200 text-center"}, "Ações")
+                    )
+                ),
+                React.createElement('tbody', null, 
+                    usersList.map(user => React.createElement('tr', { key: user.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', {className:"px-6 py-4 border-r border-slate-200"}, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, user.username)
+                        ),
+                        React.createElement('td', {className:"px-6 py-4 border-r border-slate-200"}, user.fullname),
+                        React.createElement('td', {className:"px-6 py-4 border-r border-slate-200"}, getRoleBadge(user.role)),
+                        React.createElement('td', {className:"px-6 py-4 text-center"}, 
+                            React.createElement('button', { onClick: () => confirmDeleteUser(user), className: "text-gray-400 hover:text-red-600 transition-colors" }, 
+                                React.createElement(LucideIcon, {name: 'Trash2', className: 'h-5 w-5'})
+                            )
+                        )
+                    ))
+                )
+            )
+        ),
+        showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir usuário "${userToDelete?.username}"?`, onConfirm: handleDeleteUser, onCancel: () => setShowConfirmModal(false) })
+    );
+}
+
+/* FIM DO CÓDIGO CORRIGIDO */
+           /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
+
+function ConcessionManagement({ userId, userRole, showToast }) {
+    const [concessions, setConcessions] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
     const [showForm, setShowForm] = React.useState(false);
     const [isEditing, setIsEditing] = React.useState(false);
-    const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
-    
-    // CORRIGIDO: Removido 'nome_completo' do estado inicial
-    const initialFormState = { 
-        apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '', 
-        razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '' 
-    };
-
+    const [currentConcession, setCurrentConcession] = React.useState(null);
+    const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '' };
     const [formData, setFormData] = React.useState(initialFormState);
+    const [allPlates, setAllPlates] = React.useState([]);
+    const [allTerceiros, setAllTerceiros] = React.useState([]);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-    const [terceiroToDelete, setTerceiroToDelete] = React.useState(null);
+    const [concessionToEnd, setConcessionToEnd] = React.useState(null);
 
-    const fetchTerceiros = React.useCallback(async () => {
+    const formatDate = (dateString) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
+        return date.toLocaleDateString('pt-BR');
+    };
+
+    // NOVO: Função para as tags de tipo de implemento
+    const getTypeBadgeClasses = (type) => {
+        switch (type) {
+            case 'BOMBA': return 'bg-blue-100 text-blue-800';
+            case 'BETONEIRA': return 'bg-green-100 text-green-800';
+            case 'BOMBA LANÇA': return 'bg-yellow-100 text-yellow-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+    
+    // NOVO: Função para a tag de status da concessão
+    const getConcessionStatusBadge = (isFinished) => {
+        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
+        if (isFinished) {
+            return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, "Encerrada");
+        }
+        return null; // Retorna nulo se não estiver encerrada para mostrar os botões
+    };
+
+    const fetchAllData = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase.from('terceiros').select('*').order('apelido', { ascending: true });
-            if (error) throw error;
-            setTerceirosList(data || []);
+            const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
+                supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
+                supabase.from('terceiros').select('codSAP, apelido, cnpj, nome, cpf'),
+                supabase.from('equipamentos').select('plate, type')
+            ]);
+            if (concessaoRes.error) throw concessaoRes.error;
+            if (terceirosRes.error) throw terceirosRes.error;
+            if (equipamentosRes.error) throw equipamentosRes.error;
+            setAllTerceiros(terceirosRes.data || []);
+            setAllPlates(equipamentosRes.data.map(e => e.plate) || []);
+            const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
+            const terceirosMap = new Map(terceirosRes.data.map(t => [t.codSAP, t]));
+            const joinedData = concessaoRes.data.map(c => {
+                const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome: 'N/A', cpf: 'N/A' };
+                const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
+                return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
+            });
+            setConcessions(joinedData);
         } catch (err) {
-            showToast("Erro ao carregar terceiros.", "error");
+            showToast("Erro ao carregar dados de concessão.", "error");
         }
         setIsLoading(false);
     }, [showToast]);
 
-    React.useEffect(() => {
-        fetchTerceiros();
-    }, [fetchTerceiros]);
+    React.useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        let processedValue = value;
-        if (name === 'cnpj') {
-            processedValue = formatCNPJ(value);
-        } else if (name === 'cpf') {
-            processedValue = formatCPF(value);
-        }
-        setFormData(prev => ({ ...prev, [name]: processedValue }));
-    };
+    const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.apelido.trim() || !formData.codSAP.trim() || !formData.cnpj.trim()) {
-            showToast("Por favor, preencha os campos obrigatórios (Apelido, Cód. SAP, CNPJ).", "error");
+        if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
+            showToast("Por favor, preencha todos os campos obrigatórios.", "error");
             return;
         }
         setIsLoading(true);
         try {
-            // CORRIGIDO: Removido 'nome_completo' do registro a ser salvo
-            const record = {
-                apelido: formData.apelido.trim(),
-                codSAP: formData.codSAP.trim(),
-                cnpj: formData.cnpj.replace(/[^\d]/g, ''),
-                nome: formData.nome.trim(),
-                cpf: formData.cpf.replace(/[^\d]/g, ''),
-                razao: formData.razao.trim(),
-                rua: formData.rua.trim(),
-                bairro: formData.bairro.trim(),
-                cidade: formData.cidade.trim(),
-                estado: formData.estado.trim(),
-                cep: formData.cep.trim()
-            };
-
+            const record = { placa: formData.placa, codSAP: formData.codSAP, valorfixo: parseFloat(formData.valorfixo), data_inicio: formData.data_inicio };
             if (isEditing) {
-                const { error } = await supabase.from('terceiros').update(record).eq('id', currentTerceiro.id);
+                const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
                 if (error) throw error;
-                showToast("Terceiro atualizado com sucesso!", "success");
+                showToast("Concessão atualizada com sucesso!", "success");
             } else {
-                const { error } = await supabase.from('terceiros').insert([{ ...record, usuarioCriacao: userId }]);
+                const { error } = await supabase.from('concessao').insert([record]);
                 if (error) throw error;
-                showToast("Terceiro cadastrado com sucesso!", "success");
+                showToast("Concessão criada com sucesso!", "success");
             }
             setShowForm(false);
             setIsEditing(false);
             setFormData(initialFormState);
-            fetchTerceiros();
+            fetchAllData();
         } catch (err) {
-            showToast(`Erro ao salvar terceiro: ${err.message}`, "error");
+            showToast(`Erro ao salvar concessão: ${err.message}`, "error");
         }
         setIsLoading(false);
     };
 
-    const handleEditClick = (terceiro) => {
+    const handleEditClick = (concession) => {
         setIsEditing(true);
-        setCurrentTerceiro(terceiro);
-        // CORRIGIDO: Removido 'nome_completo' dos dados do formulário de edição
-        setFormData({
-            apelido: terceiro.apelido || '',
-            codSAP: terceiro.codSAP || '',
-            cnpj: formatCNPJ(terceiro.cnpj) || '',
-            nome: terceiro.nome || '',
-            cpf: formatCPF(terceiro.cpf) || '',
-            razao: terceiro.razao || '',
-            rua: terceiro.rua || '',
-            bairro: terceiro.bairro || '',
-            cidade: terceiro.cidade || '',
-            estado: terceiro.estado || '',
-            cep: terceiro.cep || ''
-        });
+        setCurrentConcession(concession);
+        setFormData({ placa: concession.placa, codSAP: concession.codSAP, valorfixo: concession.valorfixo, data_inicio: new Date(concession.data_inicio).toISOString().split('T')[0] });
         setShowForm(true);
     };
-
+    
     const handleCancel = () => {
         setShowForm(false);
         setIsEditing(false);
         setFormData(initialFormState);
     };
 
-    const confirmDelete = (terceiro) => {
-        setTerceiroToDelete(terceiro);
+    const confirmEndConcession = (concession) => {
+        setConcessionToEnd(concession);
         setShowConfirmModal(true);
     };
-
-    const handleDelete = async () => {
-        if (!terceiroToDelete) return;
+    
+    const handleEndConcession = async () => {
+        if (!concessionToEnd) return;
         setIsLoading(true);
         try {
-            const { error } = await supabase.from('terceiros').delete().eq('id', terceiroToDelete.id);
+            const { error } = await supabase.from('concessao').update({ data_fim: new Date().toISOString() }).eq('id', concessionToEnd.id);
             if (error) throw error;
-            showToast("Terceiro excluído com sucesso!", "success");
-            fetchTerceiros();
+            showToast("Concessão encerrada com sucesso!", "success");
+            fetchAllData();
         } catch (err) {
-            showToast("Erro ao excluir terceiro.", "error");
+            showToast("Erro ao encerrar concessão.", "error");
         }
         setShowConfirmModal(false);
-        setTerceiroToDelete(null);
+        setConcessionToEnd(null);
         setIsLoading(false);
     };
 
-    const filteredList = terceirosList.filter(t =>
-        Object.values(t).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredList = concessions.filter(c => {
+        const search = searchTerm.toLowerCase();
+        return Object.values(c).some(val => val && String(val).toLowerCase().includes(search));
+    });
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Terceiros"),
-        !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
-            React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
-                React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
-                "Cadastrar Novo Terceiro"
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
+        userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+            React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
+                React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
+                "Nova Concessão"
             )
         ),
-        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
-            // CORRIGIDO: Campo 'nome_completo' alterado para 'nome'
-            React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido*", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "razao", value: formData.razao, onChange: handleInputChange, placeholder: "Razão Social", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "nome", value: formData.nome, onChange: handleInputChange, placeholder: "Nome Completo", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "cep", value: formData.cep, onChange: handleInputChange, placeholder: "CEP", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "rua", value: formData.rua, onChange: handleInputChange, placeholder: "Rua", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "bairro", value: formData.bairro, onChange: handleInputChange, placeholder: "Bairro", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder: "Cidade", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "estado", value: formData.estado, onChange: handleInputChange, placeholder: "Estado", className: "p-2 border rounded" }),
-
+        showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
+            React.createElement('select', { name: "placa", value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded" },
+                React.createElement('option', { value: "" }, "Selecione a Placa"),
+                allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+            ),
+            React.createElement('select', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded" },
+                React.createElement('option', { value: "" }, "Selecione o Terceiro"),
+                allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+            ),
+            React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded" }),
             React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
                 React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                 React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
             )
         ),
-        React.createElement('input', { type: "text", placeholder: "Buscar em todos os campos...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-        
+        React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+    
+        // ATUALIZADO: Tabela com novo estilo
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
+                        userRole === 'administrador' && React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
                     )
                 ),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
-                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
-                    filteredList.map(t =>
-                        React.createElement('tr', { key: t.id, className: "hover:bg-blue-50 even:bg-slate-50" },
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, t.apelido)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.razao),
-                            // CORRIGIDO: Exibindo 't.nome' na coluna "Nome Completo"
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.nome),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.codSAP),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(t.cnpj)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(t.cpf)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `${t.rua || ''}, ${t.bairro || ''} - ${t.cidade || ''}/${t.estado || ''}`),
-                            React.createElement('td', { className: "px-6 py-4 text-center" },
-                                React.createElement('div', { className: "flex justify-center gap-x-4" },
-                                    React.createElement('button', { onClick: () => handleEditClick(t), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
-                                    React.createElement('button', { onClick: () => confirmDelete(t), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Excluir" }, React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' }))
-                                )
-                            )
-                        )
-                    )
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando...")) :
+                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
+                    filteredList.map(c =>
+                        React.createElement('tr', { key: c.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.codSAP),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.apelido),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: 'font-medium text-slate-800' }, c.placa)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(c.tipoImplemento)}` }, c.tipoImplemento)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate
+
+            // COMPONENTE ATUALIZADO: ContractManagement
+            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ContractManagement */
+
+function ContractManagement({ userId, userRole, showToast }) {
+    const [category, setCategory] = React.useState('Contratação');
+    const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
+    const [formData, setFormData] = React.useState(initialFormState);
+    const [terceiros, setTerceiros] = React.useState([]);
+    const [allPlates, setAllPlates] = React.useState([]);
+    const [activeConcessions, setActiveConcessions] = React.useState([]);
+    const [history, setHistory] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+
+    // NOVO: Função para criar a "tag" de categoria
+    const getCategoryBadge = (category) => {
+        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
+        switch (category) {
+            case 'Contratação':
+                return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, category);
+            case 'Troca de Placa':
+                return React.createElement('span', { className: `bg-yellow-100 text-yellow-800 ${baseClasses}` }, category);
+            case 'Encerramento':
+            case 'Encerramento de Placa':
+                return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, category);
+            default:
+                return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, category);
+        }
+    };
+    
+    const fetchInitialData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [terceirosRes, platesRes, historyRes] = await Promise.all([
+                supabase.from('terceiros').select('codSAP, apelido'),
+                supabase.from('equipamentos').select('plate'),
+                supabase.from('contrato_distrato').select('*').order('data_alteracao', { ascending: false })
+            ]);
+            if (terceirosRes.error) throw terceirosRes.error;
+            if (platesRes.error) throw platesRes.error;
+            if (historyRes.error) throw historyRes.error;
+            setTerceiros(terceirosRes.data);
+            setAllPlates(platesRes.data.map(p => p.plate));
+            setHistory(historyRes.data);
+        } catch (err) {
+            showToast("Erro ao carregar dados iniciais.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast]);
+
+    React.useEffect(() => { fetchInitialData(); }, [fetchInitialData]);
+
+    React.useEffect(() => {
+        const fetchActiveConcessions = async () => {
+            if ((category === 'Troca de Placa' || category === 'Encerramento de Placa') && formData.codSAP) {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('concessao')
+                    .select('placa')
+                    .eq('codSAP', formData.codSAP)
+                    .is('data_fim', null);
+                if (error) {
+                    showToast("Erro ao buscar concessões ativas.", "error");
+                } else {
+                    setActiveConcessions(data.map(c => c.placa));
+                }
+                setIsLoading(false);
+            } else {
+                setActiveConcessions([]);
+            }
+        };
+        fetchActiveConcessions();
+    }, [formData.codSAP, category, showToast]);
+
+    const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const contractData = {
+                data_alteracao: formData.data_alteracao,
+                codSAP: formData.codSAP,
+                categoria: category,
+                atraso: parseInt(formData.atraso, 10) || 0,
+            };
+            const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
+            if (contractError) throw contractError;
+            
+            switch (category) {
+                case 'Contratação':
+                    const { error: hireError } = await supabase.from('concessao').insert([{
+                        codSAP: formData.codSAP,
+                        placa: formData.placa,
+                        valorfixo: parseFloat(formData.valorfixo),
+                        data_inicio: formData.data_alteracao
+                    }]);
+                    if (hireError) throw hireError;
+                    break;
+                case 'Troca de Placa':
+                    const endDate = new Date(formData.data_alteracao);
+                    endDate.setDate(endDate.getDate() - 1);
+                    const { error: endError } = await supabase
+                        .from('concessao')
+                        .update({ data_fim: endDate.toISOString().split('T')[0] })
+                        .eq('codSAP', formData.codSAP)
+                        .eq('placa', formData.placa_antiga)
+                        .is('data_fim', null);
+                    if (endError) throw endError;
+                    const { error: newPlateError } = await supabase.from('concessao').insert([{
+                        codSAP: formData.codSAP,
+                        placa: formData.placa,
+                        valorfixo: parseFloat(formData.valorfixo),
+                        data_inicio: formData.data_alteracao
+                    }]);
+                    if (newPlateError) throw newPlateError;
+                    break;
+                case 'Encerramento de Placa':
+                    const { error: terminatePlateError } = await supabase
+                        .from('concessao')
+                        .update({ data_fim: formData.data_alteracao })
+                        .eq('codSAP', formData.codSAP)
+                        .eq('placa', formData.placa)
+                        .is('data_fim', null);
+                    if (terminatePlateError) throw terminatePlateError;
+                    break;
+                case 'Encerramento':
+                    const { error: terminateError } = await supabase
+                        .from('concessao')
+                        .update({ data_fim: formData.data_alteracao })
+                        .eq('codSAP', formData.codSAP)
+                        .is('data_fim', null);
+                    if (terminateError) throw terminateError;
+                    break;
+            }
+            showToast(`Operação de ${category} registrada com sucesso!`, 'success');
+            setFormData(initialFormState);
+            fetchInitialData();
+        } catch (err) {
+            showToast(`Erro na operação: ${err.message}`, 'error');
+        }
+        setIsLoading(false);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
+    };
+
+    const renderFormFields = () => {
+        const commonFields = [
+            React.createElement('select', { key: 'codSAP', name: 'codSAP', value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                React.createElement('option', { value: '' }, "Selecione o Terceiro"),
+                terceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
+            ),
+            React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
+            React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
+        ];
+        switch (category) {
+            case 'Contratação':
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Troca de Placa':
+                return [
+                    ...commonFields,
+                    React.createElement('select', { key: 'placa_antiga', name: 'placa_antiga', value: formData.placa_antiga, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa Antiga" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
+                        React.createElement('option', { value: '' }, "Selecione a Nova Placa"),
+                        allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
+                ];
+            case 'Encerramento de Placa':
+                return [
+                    ...commonFields.slice(0, 1),
+                    React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
+                        React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa a Encerrar" : "Nenhuma placa ativa"),
+                        activeConcessions.map(p => React.createElement('option', { key: p, value: p }, p))
+                    ),
+                    ...commonFields.slice(1)
+                ];
+            case 'Encerramento':
+                return commonFields;
+            default:
+                return [];
+        }
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
+        React.createElement('div', { className: "mb-6" },
+            React.createElement('div', { className: "flex justify-center border-b" },
+                ['Contratação', 'Troca de Placa', 'Encerramento', 'Encerramento de Placa'].map(cat => (
+                    React.createElement('button', {
+                        key: cat,
+                        onClick: () => { setCategory(cat); setFormData(initialFormState); },
+                        className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+                    }, cat)
+                ))
+            )
+        ),
+        React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
+            renderFormFields(),
+            React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
+                React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition", disabled: isLoading },
+                    isLoading ? 'Processando...' : 'Executar Operação'
                 )
             )
         ),
-        showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
+        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
+        
+        // ATUALIZADO: Tabela com novo estilo
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading && history.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
+                    history.map(rec => React.createElement('tr', { key: rec.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, formatDate(rec.data_alteracao))
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, getCategoryBadge(rec.categoria)),
+                        React.createElement('td', { className: "px-6 py-4" }, rec.atraso)
+                    ))
+                )
+            )
+        )
     );
 }
-           function ConcessionManagement({ userId, userRole, showToast }) {
-                const [concessions, setConcessions] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(false);
-                const [showForm, setShowForm] = React.useState(false);
-                const [isEditing, setIsEditing] = React.useState(false);
-                const [currentConcession, setCurrentConcession] = React.useState(null);
-                const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '' };
-                const [formData, setFormData] = React.useState(initialFormState);
-                const [allPlates, setAllPlates] = React.useState([]);
-                const [allTerceiros, setAllTerceiros] = React.useState([]);
-                const [searchTerm, setSearchTerm] = React.useState('');
-                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-                const [concessionToEnd, setConcessionToEnd] = React.useState(null);
 
-                const formatDate = (dateString) => {
-                    if (!dateString) return '—';
-                    const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
-                    return date.toLocaleDateString('pt-BR');
-                };
-
-                const fetchAllData = React.useCallback(async () => {
-                    setIsLoading(true);
-                    try {
-                        const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
-                            supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
-                            supabase.from('terceiros').select('codSAP, apelido, cnpj, nome, cpf'),
-                            supabase.from('equipamentos').select('plate, type')
-                        ]);
-
-                        if (concessaoRes.error) throw concessaoRes.error;
-                        if (terceirosRes.error) throw terceirosRes.error;
-                        if (equipamentosRes.error) throw equipamentosRes.error;
-
-                        setAllTerceiros(terceirosRes.data || []);
-                        setAllPlates(equipamentosRes.data.map(e => e.plate) || []);
-
-                        const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
-                        
-                        const terceirosMap = new Map(terceirosRes.data.map(t => [t.codSAP, t]));
-                        const joinedData = concessaoRes.data.map(c => {
-                            const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome: 'N/A', cpf: 'N/A' };
-                            const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
-                            return {
-                                ...c,
-                                apelido: terceiroInfo.apelido,
-                                cnpj: terceiroInfo.cnpj,
-                                nome: terceiroInfo.nome,
-                                cpf: terceiroInfo.cpf,
-                                tipoImplemento: tipoImplemento
-                            };
-                        });
-                        setConcessions(joinedData);
-
-                    } catch (err) {
-                        showToast("Erro ao carregar dados de concessão.", "error");
-                        console.error(err);
-                    }
-                    setIsLoading(false);
-                }, [showToast]);
-
-                React.useEffect(() => {
-                    fetchAllData();
-                }, [fetchAllData]);
-
-                const handleInputChange = (e) => {
-                    const { name, value } = e.target;
-                    setFormData(prev => ({ ...prev, [name]: value }));
-                };
-
-                const handleFormSubmit = async (e) => {
-                    e.preventDefault();
-                    if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
-                        showToast("Por favor, preencha todos os campos obrigatórios.", "error");
-                        return;
-                    }
-                    setIsLoading(true);
-                    try {
-                        const record = {
-                            placa: formData.placa,
-                            codSAP: formData.codSAP,
-                            valorfixo: parseFloat(formData.valorfixo),
-                            data_inicio: formData.data_inicio,
-                        };
-                        if (isEditing) {
-                            const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
-                            if (error) throw error;
-                            showToast("Concessão atualizada com sucesso!", "success");
-                        } else {
-                            const { error } = await supabase.from('concessao').insert([record]);
-                            if (error) throw error;
-                            showToast("Concessão criada com sucesso!", "success");
-                        }
-                        setShowForm(false);
-                        setIsEditing(false);
-                        setFormData(initialFormState);
-                        fetchAllData();
-                    } catch (err) {
-                        showToast(`Erro ao salvar concessão: ${err.message}`, "error");
-                    }
-                    setIsLoading(false);
-                };
-
-                const handleEditClick = (concession) => {
-                    setIsEditing(true);
-                    setCurrentConcession(concession);
-                    setFormData({
-                        placa: concession.placa,
-                        codSAP: concession.codSAP,
-                        valorfixo: concession.valorfixo,
-                        data_inicio: new Date(concession.data_inicio).toISOString().split('T')[0]
-                    });
-                    setShowForm(true);
-                };
-                
-                const handleCancel = () => {
-                    setShowForm(false);
-                    setIsEditing(false);
-                    setFormData(initialFormState);
-                };
-
-                const confirmEndConcession = (concession) => {
-                    setConcessionToEnd(concession);
-                    setShowConfirmModal(true);
-                };
-                
-                const handleEndConcession = async () => {
-                    if (!concessionToEnd) return;
-                    setIsLoading(true);
-                    try {
-                        const { error } = await supabase.from('concessao').update({ data_fim: new Date().toISOString() }).eq('id', concessionToEnd.id);
-                        if (error) throw error;
-                        showToast("Concessão encerrada com sucesso!", "success");
-                        fetchAllData();
-                    } catch (err) {
-                        showToast("Erro ao encerrar concessão.", "error");
-                    }
-                    setShowConfirmModal(false);
-                    setConcessionToEnd(null);
-                    setIsLoading(false);
-                };
-
-                const filteredList = concessions.filter(c => {
-                    const search = searchTerm.toLowerCase();
-                    return (
-                        (c.apelido && c.apelido.toLowerCase().includes(search)) ||
-                        (c.codSAP && c.codSAP.toLowerCase().includes(search)) ||
-                        (c.placa && c.placa.toLowerCase().includes(search)) ||
-                        (c.cnpj && c.cnpj.toLowerCase().includes(search)) ||
-                        (c.nome && c.nome.toLowerCase().includes(search)) ||
-                        (c.cpf && c.cpf.toLowerCase().includes(search)) ||
-                        (c.tipoImplemento && c.tipoImplemento.toLowerCase().includes(search))
-                    );
-                });
-
-                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
-                    userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
-                        React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
-                            React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
-                            "Nova Concessão"
-                        )
-                    ),
-                    showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
-                        React.createElement('select', { name: "placa", value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded" },
-                            React.createElement('option', { value: "" }, "Selecione a Placa"),
-                            allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
-                        ),
-                        React.createElement('select', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded" },
-                            React.createElement('option', { value: "" }, "Selecione o Terceiro"),
-                            allTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
-                        ),
-                        React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded" }),
-                        React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded" }),
-                        React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
-                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
-                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
-                        )
-                    ),
-                    React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-                    React.createElement('div', { className: "overflow-x-auto" },
-                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
-                            React.createElement('thead', { className: "bg-gray-100" },
-                                React.createElement('tr', null,
-                                    // ATUALIZADO: Ordem dos cabeçalhos alterada conforme solicitado
-                                    ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h)),
-                                    userRole === 'administrador' && React.createElement('th', { className: "p-2 text-right" }, "Ações")
-                                )
-                            ),
-                            React.createElement('tbody', { className: "divide-y" },
-                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando...")) :
-                                !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
-                                filteredList.map(c =>
-                                    React.createElement('tr', { key: c.id, className: "hover:bg-gray-50" },
-                                        // ATUALIZADO: Ordem das células alterada para corresponder ao cabeçalho
-                                        React.createElement('td', { className: "p-2" }, c.codSAP),
-                                        React.createElement('td', { className: "p-2" }, c.apelido),
-                                        React.createElement('td', { className: "p-2" }, c.placa),
-                                        React.createElement('td', { className: "p-2" }, c.tipoImplemento),
-                                        React.createElement('td', { className: "p-2" }, c.nome),
-                                        React.createElement('td', { className: "p-2" }, formatCNPJ(c.cnpj)),
-                                        React.createElement('td', { className: "p-2" }, formatCPF(c.cpf)),
-                                        React.createElement('td', { className: "p-2" }, formatDate(c.data_inicio)),
-                                        React.createElement('td', { className: "p-2" }, formatDate(c.data_fim)),
-                                        React.createElement('td', { className: "p-2" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
-                                        userRole === 'administrador' && React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
-                                            c.data_fim ? 
-                                                React.createElement('span', { className: "text-gray-400 italic" }, "Encerrada") :
-                                                React.createElement(React.Fragment, null,
-                                                    React.createElement('button', { onClick: () => handleEditClick(c), className: "text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit' })),
-                                                    React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-red-600 p-1 hover:bg-red-100 rounded-full", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban' }))
-                                                )
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    ),
-                    showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
-                );
-            }
-
-            // COMPONENTE ATUALIZADO: ContractManagement
-            function ContractManagement({ userId, userRole, showToast }) {
-                const [category, setCategory] = React.useState('Contratação');
-                const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
-                const [formData, setFormData] = React.useState(initialFormState);
-                
-                const [terceiros, setTerceiros] = React.useState([]);
-                const [allPlates, setAllPlates] = React.useState([]);
-                const [activeConcessions, setActiveConcessions] = React.useState([]);
-                const [history, setHistory] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(false);
-
-                const fetchInitialData = React.useCallback(async () => {
-                    setIsLoading(true);
-                    try {
-                        const [terceirosRes, platesRes, historyRes] = await Promise.all([
-                            supabase.from('terceiros').select('codSAP, apelido'),
-                            supabase.from('equipamentos').select('plate'),
-                            supabase.from('contrato_distrato').select('*').order('data_alteracao', { ascending: false })
-                        ]);
-                        if (terceirosRes.error) throw terceirosRes.error;
-                        if (platesRes.error) throw platesRes.error;
-                        if (historyRes.error) throw historyRes.error;
-                        setTerceiros(terceirosRes.data);
-                        setAllPlates(platesRes.data.map(p => p.plate));
-                        setHistory(historyRes.data);
-                    } catch (err) {
-                        showToast("Erro ao carregar dados iniciais.", "error");
-                    }
-                    setIsLoading(false);
-                }, [showToast]);
-
-                React.useEffect(() => {
-                    fetchInitialData();
-                }, [fetchInitialData]);
-
-                React.useEffect(() => {
-                    const fetchActiveConcessions = async () => {
-                        if ((category === 'Troca de Placa' || category === 'Encerramento de Placa') && formData.codSAP) {
-                            setIsLoading(true);
-                            const { data, error } = await supabase
-                                .from('concessao')
-                                .select('placa')
-                                .eq('codSAP', formData.codSAP)
-                                .is('data_fim', null);
-                            
-                            if (error) {
-                                showToast("Erro ao buscar concessões ativas.", "error");
-                            } else {
-                                setActiveConcessions(data.map(c => c.placa));
-                            }
-                            setIsLoading(false);
-                        } else {
-                            setActiveConcessions([]);
-                        }
-                    };
-                    fetchActiveConcessions();
-                }, [formData.codSAP, category, showToast]);
-
-                const handleInputChange = e => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-                
-                const handleFormSubmit = async (e) => {
-                    e.preventDefault();
-                    setIsLoading(true);
-                    
-                    try {
-                        // Inserir em contrato_distrato primeiro
-                        const contractData = {
-                            data_alteracao: formData.data_alteracao,
-                            codSAP: formData.codSAP,
-                            categoria: category,
-                            atraso: parseInt(formData.atraso, 10) || 0,
-                        };
-                        const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
-                        if (contractError) throw contractError;
-                        
-                        // Lógica específica da categoria
-                        switch (category) {
-                            case 'Contratação':
-                                const { error: hireError } = await supabase.from('concessao').insert([{
-                                    codSAP: formData.codSAP,
-                                    placa: formData.placa,
-                                    valorfixo: parseFloat(formData.valorfixo),
-                                    data_inicio: formData.data_alteracao
-                                }]);
-                                if (hireError) throw hireError;
-                                break;
-
-                            case 'Troca de Placa':
-                                const endDate = new Date(formData.data_alteracao);
-                                endDate.setDate(endDate.getDate() - 1);
-
-                                const { error: endError } = await supabase
-                                    .from('concessao')
-                                    .update({ data_fim: endDate.toISOString().split('T')[0] })
-                                    .eq('codSAP', formData.codSAP)
-                                    .eq('placa', formData.placa_antiga)
-                                    .is('data_fim', null);
-                                if (endError) throw endError;
-
-                                const { error: newPlateError } = await supabase.from('concessao').insert([{
-                                    codSAP: formData.codSAP,
-                                    placa: formData.placa,
-                                    valorfixo: parseFloat(formData.valorfixo),
-                                    data_inicio: formData.data_alteracao
-                                }]);
-                                if (newPlateError) throw newPlateError;
-                                break;
-                            
-                            // NOVO CASE ADICIONADO
-                            case 'Encerramento de Placa':
-                                const { error: terminatePlateError } = await supabase
-                                    .from('concessao')
-                                    .update({ data_fim: formData.data_alteracao })
-                                    .eq('codSAP', formData.codSAP)
-                                    .eq('placa', formData.placa) // Finaliza apenas a placa específica
-                                    .is('data_fim', null);
-                                if (terminatePlateError) throw terminatePlateError;
-                                break;
-
-                            case 'Encerramento':
-                                const { error: terminateError } = await supabase
-                                    .from('concessao')
-                                    .update({ data_fim: formData.data_alteracao })
-                                    .eq('codSAP', formData.codSAP)
-                                    .is('data_fim', null); // Finaliza todas as placas do terceiro
-                                if (terminateError) throw terminateError;
-                                break;
-                        }
-                        
-                        showToast(`Operação de ${category} registrada com sucesso!`, 'success');
-                        setFormData(initialFormState);
-                        fetchInitialData(); // Refresh history
-                        
-                    } catch (err) {
-                        showToast(`Erro na operação: ${err.message}`, 'error');
-                    }
-                    setIsLoading(false);
-                };
-
-                const formatDate = (dateString) => {
-                    if (!dateString) return '—';
-                    // Garante que a data seja tratada como UTC para evitar problemas de fuso horário
-                    const date = new Date(dateString);
-                    const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-                    return new Date(date.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
-                };
-
-
-                const renderFormFields = () => {
-                    const commonFields = [
-                        React.createElement('select', { key: 'codSAP', name: 'codSAP', value: formData.codSAP, onChange: handleInputChange, className: "p-2 border rounded", required: true },
-                            React.createElement('option', { value: '' }, "Selecione o Terceiro"),
-                            terceiros.map(t => React.createElement('option', { key: t.codSAP, value: t.codSAP }, `${t.apelido} (${t.codSAP})`))
-                        ),
-                        React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
-                        React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
-                    ];
-
-                    switch (category) {
-                        case 'Contratação':
-                            return [
-                                ...commonFields,
-                                React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
-                                    React.createElement('option', { value: '' }, "Selecione a Placa"),
-                                    allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
-                                ),
-                                React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true })
-                            ];
-                        case 'Troca de Placa':
-                            return [
-                                ...commonFields,
-                                React.createElement('select', { key: 'placa_antiga', name: 'placa_antiga', value: formData.placa_antiga, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
-                                    React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa Antiga" : "Nenhuma placa ativa"),
-                                    activeConcessions.map(p => React.createElement('option', { key: p, value: p }, p))
-                                ),
-                                React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
-                                    React.createElement('option', { value: '' }, "Selecione a Nova Placa"),
-                                    allPlates.map(p => React.createElement('option', { key: p, value: p }, p))
-                                ),
-                                React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
-                            ];
-                        case 'Encerramento de Placa':
-                             return [
-                                ...commonFields.slice(0, 1), // Pega apenas o seletor de terceiro
-                                React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
-                                    React.createElement('option', { value: '' }, activeConcessions.length > 0 ? "Selecione a Placa a Encerrar" : "Nenhuma placa ativa"),
-                                    activeConcessions.map(p => React.createElement('option', { key: p, value: p }, p))
-                                ),
-                                ...commonFields.slice(1) // Pega o resto dos campos comuns (data e atraso)
-                            ];
-
-                        case 'Encerramento':
-                            return commonFields;
-                        default:
-                            return [];
-                    }
-                };
-
-                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
-                    
-                    React.createElement('div', { className: "mb-6" },
-                        React.createElement('div', { className: "flex justify-center border-b" },
-                           ['Contratação', 'Troca de Placa', 'Encerramento', 'Encerramento de Placa'].map(cat => (
-                                React.createElement('button', {
-                                    key: cat,
-                                    onClick: () => { setCategory(cat); setFormData(initialFormState); },
-                                    className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
-                                }, cat)
-                            ))
-                        )
-                    ),
-                    
-                    React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
-                        renderFormFields(),
-                        React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
-                            React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition", disabled: isLoading },
-                                isLoading ? 'Processando...' : 'Executar Operação'
-                            )
-                        )
-                    ),
-                    
-                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
-                    React.createElement('div', { className: "overflow-x-auto" },
-                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
-                            React.createElement('thead', { className: "bg-gray-100" },
-                                React.createElement('tr', null,
-                                    ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
-                                )
-                            ),
-                            React.createElement('tbody', { className: "divide-y" },
-                                isLoading && history.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
-                                history.map(rec => React.createElement('tr', { key: rec.id },
-                                    React.createElement('td', { className: "p-2" }, formatDate(rec.data_alteracao)),
-                                    React.createElement('td', { className: "p-2" }, rec.codSAP),
-                                    React.createElement('td', { className: "p-2" }, rec.categoria),
-                                    React.createElement('td', { className: "p-2" }, rec.atraso)
-                                ))
-                            )
-                        )
-                    )
-                );
-            }
-
+/* FIM DO CÓDIGO CORRIGIDO */
 
             function BranchTransfer({ userId, setCurrentPage, showToast }) {
               const [plate, setPlate] = React.useState('');
@@ -3138,6 +2942,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
