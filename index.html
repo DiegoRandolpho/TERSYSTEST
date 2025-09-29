@@ -141,6 +141,27 @@
             const SUPABASE_URL = 'https://gfivmnnysomfwrffybeh.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmaXZtbm55c29tZndyZmZ5YmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyOTY3NjgsImV4cCI6MjA2ODg3Mjc2OH0.NxetXJoCLh4q9zAqn_olimziI3YP4MAJzB8ed4qf8cg';
             let supabase;
+            const ALL_PAGES = {
+    dashboard: { title: 'Rel. Equipamentos', icon: 'Truck' },
+    turnoverDashboard: { title: 'Rel. Turnover', icon: 'Users' },
+    thirdPartyByRegion: { title: 'Terceiros por Região', icon: 'Building' },
+    outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
+    plateHistory: { title: 'Consulta Placas', icon: 'Search' },
+    expenseQuery: { title: 'Consulta Despesas', icon: 'DollarSign' },
+    branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
+    displacementReleases: { title: 'Lanç. Deslocamento', icon: 'CalendarDays' },
+    displacementApprovals: { title: 'Aprovação', icon: 'UserCheck' },
+    fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
+    displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
+    additionalCities: { title: 'Adic. Cidades', icon: 'MapPin' },
+    branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
+    equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
+    userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
+    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
+    concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
+    contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
+};
+
 
             const initializeSupabaseAndRenderApp = () => {
                 try {
@@ -1184,27 +1205,12 @@ function WhatsAppButton({ phoneNumber, message }) {
 /* FIM DO CÓDIGO */
 /* INÍCIO DO CÓDIGO PARA REINSERIR EditShortcutsModal */
 
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA EditShortcutsModal */
+
 function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
+    // Esta função também passa a usar a lista ALL_PAGES global
     const [selectedLinks, setSelectedLinks] = React.useState(currentLinks || []);
-    const ALL_PAGES = {
-        dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
-        turnoverDashboard: { title: 'Turnover Terceiros', icon: 'Users' }, // Adicionado o novo dashboard
-        outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
-        branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
-        concessionManagement: { title: 'Concessão', icon: 'FileText' },
-        contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
-        displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
-        additionalCities: { title: 'Adic. Cidades', icon: 'Building' },
-        fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
-        plateHistory: { title: 'Consulta Placas', icon: 'Search' },
-        expenseQuery: { title: 'Despesa', icon: 'DollarSign' },
-        displacementReleases: { title: 'Lanç. Deslocamento', icon: 'Truck' },
-        displacementApprovals: { title: 'Aprovação', icon: 'UserCheck' },
-        branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
-        equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
-        userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-        thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
-    };
+    
     const availablePages = Object.keys(ALL_PAGES).filter(key => {
         return userRole === 'administrador' || !ALL_PAGES[key].adminOnly;
     });
@@ -1250,6 +1256,8 @@ function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
         )
     );
 }
+
+/* FIM DO CÓDIGO ATUALIZADO */
 
 /* FIM DO CÓDIGO */
 /* INÍCIO DO CÓDIGO ATUALIZADO PARA ContractManagement */
@@ -3141,27 +3149,10 @@ function ExpenseQuery({ userId, userRole, showToast }) {
 
 /* INÍCIO DO CÓDIGO CORRIGIDO E DEFINITIVO PARA QuickAccessMenu */
 
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA QuickAccessMenu */
+
 function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
-    const ALL_PAGES = {
-        dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
-        turnoverDashboard: { title: 'Turnover Terceiros', icon: 'Users' },
-        outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
-        thirdPartyByRegion: { title: 'Terceiros por Região', icon: 'Building' },
-        plateHistory: { title: 'Consulta Placas', icon: 'Search' },
-        expenseQuery: { title: 'Consulta Despesas', icon: 'DollarSign' },
-        branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
-        displacementReleases: { title: 'Lanç. Deslocamento', icon: 'CalendarDays' },
-        displacementApprovals: { title: 'Aprovação', icon: 'UserCheck' },
-        fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
-        displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
-        additionalCities: { title: 'Adic. Cidades', icon: 'MapPin' },
-        branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
-        equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
-        userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-        thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
-        concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
-        contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
-    };
+    // Esta função agora usa a lista ALL_PAGES global que definimos acima
     const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
     const hoverColors = ['hover:bg-gray-900', 'hover:bg-yellow-600', 'hover:bg-gray-900'];
     const iconColors = ['text-gray-300', 'text-yellow-100', 'text-gray-300'];
@@ -3179,7 +3170,6 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         onClick: () => setCurrentPage(linkKey),
                         className: `p-6 ${colors[colorIndex]} text-white rounded-xl shadow-md ${hoverColors[colorIndex]} transition flex flex-col items-center justify-center`
                     },
-                        // ATUALIZADO: Adicionadas classes para centralizar o SVG perfeitamente
                         React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 flex items-center justify-center ${iconColors[colorIndex]}` }),
                         React.createElement('span', { className: "text-xl font-semibold" }, page.title)
                     )
@@ -3196,7 +3186,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
+/* FIM DO CÓDIGO ATUALIZADO */
             
             // Componente Principal da Aplicação
             function App() {
@@ -3401,6 +3391,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
