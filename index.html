@@ -3139,6 +3139,8 @@ function ExpenseQuery({ userId, userRole, showToast }) {
 }
             /* INÍCIO DO CÓDIGO CORRIGIDO PARA QuickAccessMenu */
 
+/* INÍCIO DO CÓDIGO CORRIGIDO E DEFINITIVO PARA QuickAccessMenu */
+
 function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     const ALL_PAGES = {
         dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
@@ -3177,8 +3179,8 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         onClick: () => setCurrentPage(linkKey),
                         className: `p-6 ${colors[colorIndex]} text-white rounded-xl shadow-md ${hoverColors[colorIndex]} transition flex flex-col items-center justify-center`
                     },
-                        // ATUALIZADO: Adicionada a classe 'flex-shrink-0' para evitar distorção
-                        React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 flex-shrink-0 ${iconColors[colorIndex]}` }),
+                        // ATUALIZADO: Adicionadas classes para centralizar o SVG perfeitamente
+                        React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 flex items-center justify-center ${iconColors[colorIndex]}` }),
                         React.createElement('span', { className: "text-xl font-semibold" }, page.title)
                     )
                 })
@@ -3399,6 +3401,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
