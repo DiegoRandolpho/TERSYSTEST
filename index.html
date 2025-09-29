@@ -1252,9 +1252,11 @@ function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
 }
 
 /* FIM DO CÓDIGO */
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA ContractManagement */
+
 function ContractManagement({ userId, userRole, showToast }) {
-    // ATUALIZADO: Categoria inicial alterada
-    const [category, setCategory] = React.useState('Concessão de Placa (Entrada)');
+    // ATUALIZADO: "Contratação" volta a ser a categoria inicial
+    const [category, setCategory] = React.useState('Contratação');
     const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
     const [formData, setFormData] = React.useState(initialFormState);
     const [terceiros, setTerceiros] = React.useState([]);
@@ -1263,10 +1265,11 @@ function ContractManagement({ userId, userRole, showToast }) {
     const [history, setHistory] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    // ATUALIZADO: Nomes das categorias nas tags
+    // ATUALIZADO: Adicionado o case para a nova tag 'Contratação'
     const getCategoryBadge = (category) => {
         const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
         switch (category) {
+            case 'Contratação': // ADICIONADO
             case 'Concessão de Placa (Entrada)':
                 return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, category);
             case 'Troca de Placa':
@@ -1338,8 +1341,9 @@ function ContractManagement({ userId, userRole, showToast }) {
             const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
             if (contractError) throw contractError;
             
-            // ATUALIZADO: Cases com os novos nomes
+            // ATUALIZADO: Adicionado 'Contratação' para usar a mesma lógica de 'Entrada'
             switch (category) {
+                case 'Contratação':
                 case 'Concessão de Placa (Entrada)':
                     const { error: hireError } = await supabase.from('concessao').insert([{
                         codSAP: formData.codSAP,
@@ -1396,7 +1400,9 @@ function ContractManagement({ userId, userRole, showToast }) {
             React.createElement('input', { key: 'data_alteracao', name: 'data_alteracao', type: 'date', value: formData.data_alteracao, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
             React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
         ];
+        // ATUALIZADO: Adicionado 'Contratação' para usar os mesmos campos de 'Entrada'
         switch (category) {
+            case 'Contratação':
             case 'Concessão de Placa (Entrada)':
                 return [
                     ...commonFields,
@@ -1439,8 +1445,8 @@ function ContractManagement({ userId, userRole, showToast }) {
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
         React.createElement('div', { className: "mb-6" },
             React.createElement('div', { className: "flex justify-center border-b" },
-                // ATUALIZADO: Nomes dos botões/abas
-                ['Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
+                // ATUALIZADO: Adicionada a nova aba "Contratação"
+                ['Contratação', 'Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
                     React.createElement('button', {
                         key: cat,
                         onClick: () => { setCategory(cat); setFormData(initialFormState); },
@@ -3153,5 +3159,6 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
