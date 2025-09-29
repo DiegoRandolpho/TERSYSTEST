@@ -1165,107 +1165,10 @@ function ConcessionManagement({ userId, userRole, showToast }) {
     );
 }
 
-function TurnoverDashboard({ showToast }) {
-    const [stats, setStats] = React.useState({ contratacoes: 0, encerramentos: 0, trocas: 0, turnover: 0 });
-    const [periodo, setPeriodo] = React.useState('');
-    const [periodOptions, setPeriodOptions] = React.useState([]);
-    const [isLoading, setIsLoading] = React.useState(false);
+/* INÍCIO DO CÓDIGO ATUALIZADO PARA ContractManagement */
 
-    React.useEffect(() => {
-        // Gera as opções de período (últimos 12 meses + próximos 3)
-        const options = [];
-        const today = new Date();
-        for (let i = 12; i > 0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            options.push(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
-        }
-        for (let i = 0; i < 4; i++) {
-            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-            options.push(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
-        }
-        setPeriodOptions(options.reverse());
-        // Define o período atual como padrão
-        setPeriodo(`${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`);
-    }, []);
-
-    React.useEffect(() => {
-        if (!periodo) return;
-
-        const fetchStats = async () => {
-            setIsLoading(true);
-            try {
-                const [month, year] = periodo.split('/');
-                const startDate = new Date(year, month - 1, 1).toISOString();
-                const endDate = new Date(year, month, 0, 23, 59, 59).toISOString();
-                
-                // 1. Busca movimentações no período
-                const { data: contractData, error: contractError } = await supabase
-                    .from('contrato_distrato')
-                    .select('categoria')
-                    .gte('data_alteracao', startDate)
-                    .lte('data_alteracao', endDate);
-                if (contractError) throw contractError;
-
-                const contratacoes = contractData.filter(r => r.categoria === 'Concessão de Placa (Entrada)').length;
-                const encerramentos = contractData.filter(r => r.categoria === 'Encerramento').length;
-                const trocas = contractData.filter(r => r.categoria === 'Troca de Placa').length;
-
-                // 2. Calcula a média de terceiros ativos
-                const startOfMonthStr = new Date(year, month - 1, 1).toISOString().split('T')[0];
-                const endOfMonthStr = new Date(year, month, 0).toISOString().split('T')[0];
-
-                const { count: ativosInicio, error: inicioError } = await supabase.from('concessao').select('*', { count: 'exact', head: true }).lte('data_inicio', startOfMonthStr).or(`data_fim.is.null,data_fim.gte.${startOfMonthStr}`);
-                if (inicioError) throw inicioError;
-                
-                const { count: ativosFim, error: fimError } = await supabase.from('concessao').select('*', { count: 'exact', head: true }).lte('data_inicio', endOfMonthStr).or(`data_fim.is.null,data_fim.gte.${endOfMonthStr}`);
-                if (fimError) throw fimError;
-
-                const mediaAtivos = (ativosInicio + ativosFim) / 2;
-                const turnover = mediaAtivos > 0 ? ((contratacoes + encerramentos) / mediaAtivos) * 100 : 0;
-
-                setStats({ contratacoes, encerramentos, trocas, turnover });
-
-            } catch (err) {
-                showToast(`Erro ao buscar dados do dashboard: ${err.message}`, "error");
-            }
-            setIsLoading(false);
-        };
-
-        fetchStats();
-    }, [periodo, showToast]);
-
-    const StatCard = ({ title, value, unit = '' }) => {
-        return React.createElement('div', { className: "bg-slate-50 p-6 rounded-lg shadow-sm text-center" },
-            React.createElement('h3', { className: "text-slate-500 font-semibold uppercase text-sm" }, title),
-            isLoading ? 
-            React.createElement('div', { className: "h-8 w-16 bg-slate-200 rounded animate-pulse mx-auto mt-2" }) :
-            React.createElement('p', { className: "text-3xl font-bold text-slate-800 mt-1" }, `${value}${unit}`)
-        );
-    };
-
-    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('div', { className: "flex flex-col sm:flex-row justify-between items-center mb-6" },
-            React.createElement('h2', { className: "text-2xl font-bold text-gray-800" }, "Dashboard de Turnover de Terceiros"),
-            React.createElement('div', { className: "w-full sm:w-auto mt-4 sm:mt-0" },
-                React.createElement('select', { 
-                    value: periodo, 
-                    onChange: e => setPeriodo(e.target.value), 
-                    className: "w-full p-2 border rounded-md shadow-sm" 
-                },
-                    periodOptions.map(opt => React.createElement('option', { key: opt, value: opt }, opt))
-                )
-            )
-        ),
-        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" },
-            React.createElement(StatCard, { title: "Contratações", value: stats.contratacoes }),
-            React.createElement(StatCard, { title: "Encerramentos", value: stats.encerramentos }),
-            React.createElement(StatCard, { title: "Turnover", value: stats.turnover.toFixed(2), unit: "%" }),
-            React.createElement(StatCard, { title: "Trocas de Placa", value: stats.trocas })
-        )
-    );
-}
 function ContractManagement({ userId, userRole, showToast }) {
-    // A variável 'category' é definida aqui, no estado do componente.
+    // ATUALIZADO: Categoria inicial alterada
     const [category, setCategory] = React.useState('Concessão de Placa (Entrada)');
     const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
     const [formData, setFormData] = React.useState(initialFormState);
@@ -1275,6 +1178,7 @@ function ContractManagement({ userId, userRole, showToast }) {
     const [history, setHistory] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
 
+    // ATUALIZADO: Nomes das categorias nas tags
     const getCategoryBadge = (category) => {
         const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
         switch (category) {
@@ -1349,6 +1253,7 @@ function ContractManagement({ userId, userRole, showToast }) {
             const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
             if (contractError) throw contractError;
             
+            // ATUALIZADO: Cases com os novos nomes
             switch (category) {
                 case 'Concessão de Placa (Entrada)':
                     const { error: hireError } = await supabase.from('concessao').insert([{
@@ -1449,11 +1354,11 @@ function ContractManagement({ userId, userRole, showToast }) {
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
         React.createElement('div', { className: "mb-6" },
             React.createElement('div', { className: "flex justify-center border-b" },
+                // ATUALIZADO: Nomes dos botões/abas
                 ['Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
                     React.createElement('button', {
                         key: cat,
                         onClick: () => { setCategory(cat); setFormData(initialFormState); },
-                        // A variável 'category' é usada aqui para destacar a aba ativa
                         className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
                     }, cat)
                 ))
@@ -1491,8 +1396,7 @@ function ContractManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
-
+/* FIM DO CÓDIGO ATUALIZADO */
             function BranchTransfer({ userId, setCurrentPage, showToast }) {
               const [plate, setPlate] = React.useState('');
               const [newBranch, setNewBranch] = React.useState('');
@@ -2963,282 +2867,202 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                 )
               );
             }
-            function WhatsAppButton({ phoneNumber, message }) {
-                const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
-                const whatsappUrl = `https://wa.me/${cleanedPhoneNumber}?text=${encodeURIComponent(message)}`;
+            
+            // Componente Principal da Aplicação
+            function App() {
+                const [userRole, setUserRole] = React.useState(localStorage.getItem('userRole'));
+                const [userId, setUserId] = React.useState(localStorage.getItem('userId'));
+                const [userFullname, setUserFullname] = React.useState(localStorage.getItem('userFullname'));
+                const [quickLinks, setQuickLinks] = React.useState(JSON.parse(localStorage.getItem('quickLinks')) || ['dashboard', 'outsourcingDistribution', 'branchTransfer']);
+                const [currentPage, setCurrentPage] = React.useState('quickAccessMenu');
+                const [toast, setToast] = React.useState({ show: false, message: '', type: '' });
+                const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+                const [openMenu, setOpenMenu] = React.useState('');
+                const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+                const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
-                return React.createElement('a', {
-                href: whatsappUrl,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-                title: 'Fale Conosco no WhatsApp',
-                className: "fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
-             },
-                React.createElement(LucideIcon, { name: 'WhatsApp', className: 'h-8 w-8' })
-            );
-        }
-            function EditShortcutsModal({ currentLinks, onClose, onSave, userRole }) {
-                const [selectedLinks, setSelectedLinks] = React.useState(currentLinks || []);
-                const ALL_PAGES = {
-                    dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
-                    outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
-                    branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
-                    concessionManagement: { title: 'Concessão', icon: 'FileText' },
-                    contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
-                    displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
-                    additionalCities: { title: 'Adic. Cidades', icon: 'Building' },
-                    fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
-                    branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
-                    equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
-                    userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-                    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
+                const handleLogin = (role, id, fullname, links) => { 
+                    setUserRole(role);
+                    setUserId(id); 
+                    setUserFullname(fullname);
+                    setQuickLinks(links || []);
                 };
-                const availablePages = Object.keys(ALL_PAGES).filter(key => {
-                    return userRole === 'administrador' || !ALL_PAGES[key].adminOnly;
-                });
-                const handleLinkChange = (pageKey) => {
-                    const newSelectedLinks = [...selectedLinks];
-                    const index = newSelectedLinks.indexOf(pageKey);
-
-                    if (index > -1) {
-                        newSelectedLinks.splice(index, 1);
+                const handleLogout = () => { 
+                    localStorage.clear();
+                    setUserRole(null); 
+                    setUserId(null);
+                    setUserFullname(null);
+                    setQuickLinks([]);
+                };
+                const showToast = (message, type = 'success') => setToast({ show: true, message, type });
+                const closeToast = () => setToast({ show: false, message: '', type: '' });
+                
+                const toggleMenu = (menu) => {
+                    if (isSidebarCollapsed) {
+                        setIsSidebarCollapsed(false);
                     } else {
-                        if (newSelectedLinks.length < 9) {
-                            newSelectedLinks.push(pageKey);
-                        } else {
-                            alert("Você pode selecionar no máximo 9 atalhos.");
-                        }
+                        setOpenMenu(openMenu === menu ? '' : menu);
                     }
-                    setSelectedLinks(newSelectedLinks);
                 };
 
-                return React.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" },
-                    React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg" },
-                        React.createElement('h2', { className: "text-2xl font-bold mb-6 text-center" }, "Editar Atalhos da Página Inicial"),
-                        React.createElement('p', {className: "text-center text-gray-600 mb-6"}, "Selecione até 9 atalhos para exibir na sua página inicial."),
-                        React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-4 mb-8" },
-                            availablePages.map(key => {
-                                const page = ALL_PAGES[key];
-                                const isSelected = selectedLinks.includes(key);
-                                return React.createElement('div', {
-                                    key: key,
-                                    onClick: () => handleLinkChange(key),
-                                    className: `p-4 border rounded-lg cursor-pointer flex flex-col items-center justify-center text-center transition-colors ${isSelected ? 'bg-blue-100 border-blue-500' : 'hover:bg-gray-100'}`
-                                },
-                                    React.createElement(LucideIcon, { name: page.icon, className: `h-8 w-8 mb-2 ${isSelected ? 'text-blue-600' : 'text-gray-500'}` }),
-                                    React.createElement('span', { className: `text-sm font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}` }, page.title)
-                                );
-                            })
+                const toggleSidebarCollapse = () => {
+                    setIsSidebarCollapsed(!isSidebarCollapsed);
+                    if (!isSidebarCollapsed) {
+                        setOpenMenu('');
+                    }
+                };
+
+                const handleSaveQuickLinks = async (newLinks) => {
+                    try {
+                        const { error } = await supabase
+                            .from('app_users')
+                            .update({ quick_access_links: newLinks })
+                            .eq('username', userId);
+                        if (error) throw error;
+
+                        localStorage.setItem('quickLinks', JSON.stringify(newLinks));
+                        setQuickLinks(newLinks);
+                        showToast('Atalhos salvos com sucesso!', 'success');
+                        setIsEditModalOpen(false);
+                    } catch (err) {
+                        showToast('Erro ao salvar os atalhos.', 'error');
+                        console.error("Erro ao salvar atalhos:", err);
+                    }
+                };
+
+                if (!userRole) return React.createElement(LoginPage, { onLogin: handleLogin });
+
+                const MenuItem = ({ page, icon, text }) => {
+                   const isActive = currentPage === page;
+                   return (
+                     React.createElement('li', null,
+                        React.createElement('button', {
+                           onClick: () => { setCurrentPage(page); setIsSidebarOpen(false); },
+                           className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 text-gray-300'}`
+                        },
+                        React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
+                        !isSidebarCollapsed && text
+                       )
+                     )
+                   );
+                };
+
+                const MenuCategory = ({ title, icon, children, menuKey }) => {
+                    const isOpen = openMenu === menuKey;
+                    return (
+                        React.createElement('li', { className: "mb-2" },
+                            React.createElement('button', {
+                                onClick: () => toggleMenu(menuKey),
+                                className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${isOpen && !isSidebarCollapsed ? 'bg-gray-700' : 'hover:bg-gray-700'} text-gray-200`
+                            },
+                                React.createElement('span', {className: 'flex items-center'},
+                                    React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
+                                    !isSidebarCollapsed && title
+                                ),
+                                !isSidebarCollapsed && React.createElement(LucideIcon, { name: isOpen ? "ChevronUp" : "ChevronDown", className: "h-5 w-5" })
+                            ),
+                            !isSidebarCollapsed && isOpen && React.createElement('ul', { className: "ml-6 mt-2 space-y-2" }, children)
+                        )
+                    );
+                };
+
+                const renderPage = () => {
+                    switch (currentPage) {
+                        case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
+                        case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
+                        case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
+                        case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
+                        case 'contractManagement': return React.createElement(ContractManagement, { userId, userRole, showToast });
+                        case 'plateHistory': return React.createElement(PlateHistory, { showToast });
+                        case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
+                        case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
+                        case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
+                        case 'fixedPrices': return React.createElement(FixedPrices, { userId, userRole, showToast });
+                        case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
+                        case 'displacementReleases': return React.createElement(DisplacementReleases, { userId, userRole, showToast });
+                        case 'displacementApprovals': return React.createElement(DisplacementApprovals, { userRole, showToast });
+                        case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
+                        case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
+                        case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
+                        case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
+                        case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
+                        case 'quickAccessMenu':
+                        default: return React.createElement(QuickAccessMenu, { setCurrentPage, userFullname, quickLinks, onEdit: () => setIsEditModalOpen(true) });
+                    }
+                };
+
+                return (
+                    React.createElement('div', { className: "flex min-h-screen bg-gray-100" },
+                        React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-80'}` },
+                            React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between md:justify-center'}` },
+                                !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-20 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
+                                isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-20 w-20", onClick: toggleSidebarCollapse}),
+                                !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
+                            ),
+                            React.createElement('nav', { className: "flex-grow" },
+                                React.createElement('ul', { className: "space-y-2" },
+                                     React.createElement(MenuCategory, { title: "Dashboard", icon: "LayoutDashboard", menuKey: "dashboard" },
+                                        React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
+                                        React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' })
+                                     ),
+                                     // ATUALIZADO: Itens removidos daqui
+                                     React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
+                                        React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
+                                        React.createElement(MenuItem, { page: 'displacementReleases', icon: 'Truck', text: 'Lanç. Deslocamento' }),
+                                        React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
+                                        React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Despesa' })
+                                     ),
+                                     React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
+                                        React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'FileText', text: 'Aprovação' })
+                                     ),               
+                                     React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
+                                        React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
+                                        React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
+                                        React.createElement(MenuItem, { page: 'additionalCities', icon: 'Building', text: 'Adic. Cidades' })
+                                     ),
+                                     // ATUALIZADO: Itens adicionados aqui no final
+                                     userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
+                                        React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
+                                        React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
+                                        React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
+                                        React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'Users', text: 'Terceiros' }),
+                                        React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
+                                        React.createElement(MenuItem, { page: 'contractManagement', icon: 'FileText', text: 'Contrato/Distrato' })
+                                    )
+                                )
+                             ),
+                            React.createElement('div', {className: 'mt-auto pt-4 border-t border-gray-700'},
+                                React.createElement('button', { onClick: toggleSidebarCollapse, className: "w-full flex items-center p-3 rounded-lg text-gray-400 hover:bg-gray-700 justify-center mb-2" },
+                                    React.createElement(LucideIcon, { name: isSidebarCollapsed ? "ChevronsRight" : "ChevronsLeft", className: "w-6 h-6" })
+                                ),
+                                React.createElement('button', { onClick: handleLogout, className: `w-full flex items-center justify-center p-3 rounded-lg text-red-400 hover:bg-gray-700` },
+                                    React.createElement(LucideIcon, { name: "LogOut", className: `w-6 h-6 ${!isSidebarCollapsed && 'mr-3'}` }),
+                                    !isSidebarCollapsed && 'Sair'
+                                )
+                            )
                         ),
-                        React.createElement('div', { className: "flex justify-end space-x-4" },
-                            React.createElement('button', { onClick: onClose, className: "px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition" }, "Cancelar"),
-                            React.createElement('button', { onClick: () => onSave(selectedLinks), className: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" }, "Salvar")
+                        React.createElement('main', { className: "flex-1 p-4 md:p-8 flex flex-col" },
+                            React.createElement('header', { className: "w-full bg-white p-4 rounded-xl shadow-lg mb-8 flex justify-between items-center" },
+                                React.createElement('button', { className: "md:hidden text-gray-700 p-2", onClick: () => setIsSidebarOpen(true) }, React.createElement(LucideIcon, { name: "Menu" })),
+                                React.createElement('div', { className: "text-right text-sm text-gray-600" },
+                                    React.createElement('p', null, "Nome: ", React.createElement('strong', null, userFullname)),
+                                    React.createElement('p', {className: "capitalize"}, "Função: ", React.createElement('strong', null, userRole))
+                                )
+                            ),
+                            React.createElement('div', { className: "flex-grow" }, renderPage()),
+                            toast.show && React.createElement(Toast, { message: toast.message, type: toast.type, onClose: closeToast }),
+                             isEditModalOpen && React.createElement(EditShortcutsModal, { 
+                                currentLinks: quickLinks, 
+                                onClose: () => setIsEditModalOpen(false), 
+                                onSave: handleSaveQuickLinks,
+                                userRole: userRole
+                             }),
+                                 React.createElement(WhatsAppButton, { phoneNumber: '+55 22 99207-5244', message: 'Olá, estou com dúvidas na utilização do TERSYS.'})           
                         )
                     )
                 );
             }
-
-            // Componente Principal da Aplicação
-            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO App */
-
-function App() {
-    const [userRole, setUserRole] = React.useState(localStorage.getItem('userRole'));
-    const [userId, setUserId] = React.useState(localStorage.getItem('userId'));
-    const [userFullname, setUserFullname] = React.useState(localStorage.getItem('userFullname'));
-    const [quickLinks, setQuickLinks] = React.useState(JSON.parse(localStorage.getItem('quickLinks')) || ['dashboard', 'outsourcingDistribution', 'branchTransfer']);
-    const [currentPage, setCurrentPage] = React.useState('quickAccessMenu');
-    const [toast, setToast] = React.useState({ show: false, message: '', type: '' });
-    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-    const [openMenu, setOpenMenu] = React.useState('');
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-    
-    const handleLogin = (role, id, fullname, links) => { 
-        setUserRole(role);
-        setUserId(id); 
-        setUserFullname(fullname);
-        setQuickLinks(links || []);
-    };
-    
-    const handleLogout = () => { 
-        localStorage.clear();
-        setUserRole(null); 
-        setUserId(null);
-        setUserFullname(null);
-        setQuickLinks([]);
-    };
-    
-    const showToast = (message, type = 'success') => setToast({ show: true, message, type });
-    const closeToast = () => setToast({ show: false, message: '', type: '' });
-    
-    const toggleMenu = (menu) => {
-        if (isSidebarCollapsed) {
-            setIsSidebarCollapsed(false);
-        } else {
-            setOpenMenu(openMenu === menu ? '' : menu);
         }
-    };
-    
-    const toggleSidebarCollapse = () => {
-        setIsSidebarCollapsed(!isSidebarCollapsed);
-        if (!isSidebarCollapsed) {
-            setOpenMenu('');
-        }
-    };
-    
-    const handleSaveQuickLinks = async (newLinks) => {
-        try {
-            const { error } = await supabase
-                .from('app_users')
-                .update({ quick_access_links: newLinks })
-                .eq('username', userId);
-            if (error) throw error;
-            localStorage.setItem('quickLinks', JSON.stringify(newLinks));
-            setQuickLinks(newLinks);
-            showToast('Atalhos salvos com sucesso!', 'success');
-            setIsEditModalOpen(false);
-        } catch (err) {
-            showToast('Erro ao salvar os atalhos.', 'error');
-            console.error("Erro ao salvar atalhos:", err);
-        }
-    };
-    
-    if (!userRole) return React.createElement(LoginPage, { onLogin: handleLogin });
-
-    const MenuItem = ({ page, icon, text }) => {
-        const isActive = currentPage === page;
-        return (
-            React.createElement('li', null,
-                React.createElement('button', {
-                    onClick: () => { setCurrentPage(page); setIsSidebarOpen(false); },
-                    className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : ''} ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 text-gray-300'}`
-                },
-                React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
-                !isSidebarCollapsed && text
-                )
-            )
-        );
-    };
-
-    const MenuCategory = ({ title, icon, children, menuKey }) => {
-        const isOpen = openMenu === menuKey;
-        return (
-            React.createElement('li', { className: "mb-2" },
-                React.createElement('button', {
-                    onClick: () => toggleMenu(menuKey),
-                    className: `flex items-center w-full px-4 py-2 rounded-lg transition-colors ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${isOpen && !isSidebarCollapsed ? 'bg-gray-700' : 'hover:bg-gray-700'} text-gray-200`
-                },
-                    React.createElement('span', {className: 'flex items-center'},
-                        React.createElement(LucideIcon, { name: icon, className: `h-5 w-5 ${!isSidebarCollapsed && 'mr-3'}` }),
-                        !isSidebarCollapsed && title
-                    ),
-                    !isSidebarCollapsed && React.createElement(LucideIcon, { name: isOpen ? "ChevronUp" : "ChevronDown", className: "h-5 w-5" })
-                ),
-                !isSidebarCollapsed && isOpen && React.createElement('ul', { className: "ml-6 mt-2 space-y-2" }, children)
-            )
-        );
-    };
-
-    const renderPage = () => {
-        switch (currentPage) {
-            case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
-            case 'turnoverDashboard': return React.createElement(TurnoverDashboard, { showToast });
-            case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
-            case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
-            case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
-            case 'contractManagement': return React.createElement(ContractManagement, { userId, userRole, showToast });
-            case 'plateHistory': return React.createElement(PlateHistory, { showToast });
-            case 'expenseQuery': return React.createElement(ExpenseQuery, { userId, userRole, showToast });
-            case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
-            case 'additionalCities': return React.createElement(AdditionalCities, { userId, userRole, showToast });
-            case 'fixedPrices': return React.createElement(FixedPrices, { userId, userRole, showToast });
-            case 'displacementReleases': return React.createElement(DisplacementReleases, { userId, userRole, showToast });
-            case 'displacementApprovals': return React.createElement(DisplacementApprovals, { userRole, showToast });
-            case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
-            case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
-            case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
-            case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
-            case 'quickAccessMenu':
-            default: return React.createElement(QuickAccessMenu, { setCurrentPage, userFullname, quickLinks, onEdit: () => setIsEditModalOpen(true) });
-        }
-    };
-    
-    return (
-        React.createElement('div', { className: "flex min-h-screen bg-gray-100" },
-            React.createElement('aside', { className: `fixed inset-y-0 left-0 bg-gray-800 text-white p-4 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 z-30 flex flex-col rounded-r-xl ${isSidebarCollapsed ? 'w-20' : 'w-80'}` },
-                React.createElement('div', { className: `flex items-center mb-8 ${isSidebarCollapsed ? 'justify-center' : 'justify-between md:justify-center'}` },
-                    !isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-20 cursor-pointer", onClick: () => setCurrentPage('quickAccessMenu') }),
-                    isSidebarCollapsed && React.createElement('img', { src: "https://gfivmnnysomfwrffybeh.supabase.co/storage/v1/object/public/logo//LOGO_TERSYS-removebg-preview%20(1).png", alt: "TERSYS Logo", className: "h-20 w-20", onClick: toggleSidebarCollapse}),
-                    !isSidebarCollapsed && React.createElement('button', { onClick: () => setIsSidebarOpen(false), className: "md:hidden text-white" }, React.createElement(LucideIcon, { name: "X" }))
-                ),
-                React.createElement('nav', { className: "flex-grow" },
-                    React.createElement('ul', { className: "space-y-2" },
-                        React.createElement(MenuCategory, { title: "Dashboard", icon: "LayoutDashboard", menuKey: "dashboard" },
-                            React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
-                            React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover Terceiros' }),
-                            React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' })
-                        ),
-                        React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
-                            React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
-                            React.createElement(MenuItem, { page: 'displacementReleases', icon: 'Truck', text: 'Lanç. Deslocamento' }),
-                            React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
-                            React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Despesa' })
-                        ),
-                        React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
-                            React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'FileText', text: 'Aprovação' })
-                        ),               
-                        React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
-                            React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
-                            React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
-                            React.createElement(MenuItem, { page: 'additionalCities', icon: 'Building', text: 'Adic. Cidades' })
-                        ),
-                        userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
-                            React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
-                            React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
-                            React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
-                            React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'Users', text: 'Terceiros' }),
-                            React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
-                            React.createElement(MenuItem, { page: 'contractManagement', icon: 'FileText', text: 'Contrato/Distrato' })
-                        )
-                    )
-                ),
-                React.createElement('div', {className: 'mt-auto pt-4 border-t border-gray-700'},
-                    React.createElement('button', { onClick: toggleSidebarCollapse, className: "w-full flex items-center p-3 rounded-lg text-gray-400 hover:bg-gray-700 justify-center mb-2" },
-                        React.createElement(LucideIcon, { name: isSidebarCollapsed ? "ChevronsRight" : "ChevronsLeft", className: "w-6 h-6" })
-                    ),
-                    React.createElement('button', { onClick: handleLogout, className: `w-full flex items-center justify-center p-3 rounded-lg text-red-400 hover:bg-gray-700` },
-                        React.createElement(LucideIcon, { name: "LogOut", className: `w-6 h-6 ${!isSidebarCollapsed && 'mr-3'}` }),
-                        !isSidebarCollapsed && 'Sair'
-                    )
-                )
-            ),
-            React.createElement('main', { className: "flex-1 p-4 md:p-8 flex flex-col" },
-                React.createElement('header', { className: "w-full bg-white p-4 rounded-xl shadow-lg mb-8 flex justify-between items-center" },
-                    React.createElement('button', { className: "md:hidden text-gray-700 p-2", onClick: () => setIsSidebarOpen(true) }, React.createElement(LucideIcon, { name: "Menu" })),
-                    React.createElement('div', { className: "text-right text-sm text-gray-600" },
-                        React.createElement('p', null, "Nome: ", React.createElement('strong', null, userFullname)),
-                        React.createElement('p', {className: "capitalize"}, "Função: ", React.createElement('strong', null, userRole))
-                    )
-                ),
-                React.createElement('div', { className: "flex-grow" }, renderPage()),
-                toast.show && React.createElement(Toast, { message: toast.message, type: toast.type, onClose: closeToast }),
-                isEditModalOpen && React.createElement(EditShortcutsModal, { 
-                    currentLinks: quickLinks, 
-                    onClose: () => setIsEditModalOpen(false), 
-                    onSave: handleSaveQuickLinks,
-                    userRole: userRole
-                }),
-                React.createElement(WhatsAppButton, { phoneNumber: '+55 22 99207-5244', message: 'Olá, estou com dúvidas na utilização do TERSYS.'})           
-            )
-        )
-    );
-}
     </script>
 </body>
 </html>
-
-
-
-
-
-
