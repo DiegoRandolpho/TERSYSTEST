@@ -2477,127 +2477,135 @@ function ThirdPartyManagement({ userId, showToast }) {
                     )
                 );
             }
-            function PlateHistory({ showToast }) {
-                const [plateSearch, setPlateSearch] = React.useState('');
-                const [historyResults, setHistoryResults] = React.useState([]);
-                const [isLoading, setIsLoading] = React.useState(false);
-                const [hasSearched, setHasSearched] = React.useState(false);
-                const [terceirosMap, setTerceirosMap] = React.useState(new Map());
+            /* INÍCIO DO CÓDIGO PARA SUBSTITUIR TODA A FUNÇÃO PlateHistory */
 
-                React.useEffect(() => {
-                    const fetchTerceiros = async () => {
-                        try {
-                            const { data, error } = await supabase.from('terceiros').select('codSAP, apelido');
-                            if (error) throw error;
-                            const map = new Map(data.map(t => [t.codSAP, t.apelido]));
-                            setTerceirosMap(map);
-                        } catch (err) {
-                            showToast("Erro ao carregar dados de terceiros.", "error");
-                        }
-                    };
-                    fetchTerceiros();
-                }, [showToast]);
+function PlateHistory({ showToast }) {
+    const [plateSearch, setPlateSearch] = React.useState('');
+    const [historyResults, setHistoryResults] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [hasSearched, setHasSearched] = React.useState(false);
+    const [terceirosMap, setTerceirosMap] = React.useState(new Map());
 
-                const handleSearch = async (e) => {
-                    e.preventDefault();
-                    if (!plateSearch.trim()) {
-                        showToast("Por favor, digite uma placa.", "error");
-                        return;
-                    }
-                    setIsLoading(true);
-                    setHasSearched(true);
-                    setHistoryResults([]);
+    React.useEffect(() => {
+        const fetchTerceiros = async () => {
+            try {
+                const { data, error } = await supabase.from('terceiros').select('codSAP, apelido');
+                if (error) throw error;
+                const map = new Map(data.map(t => [t.codSAP, t.apelido]));
+                setTerceirosMap(map);
+            } catch (err) {
+                showToast("Erro ao carregar dados de terceiros.", "error");
+            }
+        };
+        fetchTerceiros();
+    }, [showToast]);
 
-                    try {
-                        const { data, error } = await supabase
-                            .from('concessao')
-                            .select('codSAP, data_inicio, data_fim')
-                            .eq('placa', plateSearch.trim().toUpperCase())
-                            .order('data_inicio', { ascending: false });
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!plateSearch.trim()) {
+            showToast("Por favor, digite uma placa.", "error");
+            return;
+        }
+        setIsLoading(true);
+        setHasSearched(true);
+        setHistoryResults([]);
 
-                        if (error) throw error;
+        try {
+            const { data, error } = await supabase
+                .from('concessao')
+                .select('codSAP, data_inicio, data_fim')
+                .eq('placa', plateSearch.trim().toUpperCase())
+                .order('data_inicio', { ascending: false });
+            if (error) throw error;
 
-                        const resultsWithApelido = data.map(record => ({
-                            ...record,
-                            apelido: terceirosMap.get(record.codSAP) || 'N/A'
-                        }));
+            const resultsWithApelido = data.map(record => ({
+                ...record,
+                apelido: terceirosMap.get(record.codSAP) || 'N/A'
+            }));
+            setHistoryResults(resultsWithApelido);
 
-                        setHistoryResults(resultsWithApelido);
+        } catch (err) {
+            showToast("Erro ao buscar histórico da placa.", "error");
+        }
+        setIsLoading(false);
+    };
+    
+    const formatDate = (dateString) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
+        return date.toLocaleDateString('pt-BR');
+    };
 
-                    } catch (err) {
-                        showToast("Erro ao buscar histórico da placa.", "error");
-                    }
-                    setIsLoading(false);
-                };
-                
-                const formatDate = (dateString) => {
-                    if (!dateString) return '—';
-                    const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
-                    return date.toLocaleDateString('pt-BR');
-                };
-                
-                // >>> FUNÇÃO CORRIGIDA <<<
-                const calculateDays = (startDateString, endDateString) => {
-                    if (!startDateString) return '—';
-                
-                    // CORREÇÃO: Trata a data da mesma forma que a função formatDate
-                    const startDate = new Date(startDateString.includes('T') ? startDateString : startDateString + 'T00:00:00');
-                    const endDate = endDateString ? new Date(endDateString.includes('T') ? endDateString : endDateString + 'T00:00:00') : new Date();
-                
-                    // Validação para evitar NaN
-                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                        return "Erro";
-                    }
-                
-                    const diffTime = Math.abs(endDate - startDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    return diffDays === 0 ? 1 : diffDays;
-                };
+    const calculateDays = (startDateString, endDateString) => {
+        if (!startDateString) return '—';
+        const startDate = new Date(startDateString.includes('T') ? startDateString : startDateString + 'T00:00:00');
+        const endDate = endDateString ? new Date(endDateString.includes('T') ? endDateString : endDateString + 'T00:00:00') : new Date();
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return "Erro";
+        }
+        const diffTime = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays === 0 ? 1 : diffDays;
+    };
 
-                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta de Histórico de Placas"),
-                    React.createElement('form', { onSubmit: handleSearch, className: "flex justify-center items-center gap-4 mb-8" },
-                        React.createElement('input', {
-                            type: "text",
-                            placeholder: "Digite a placa (ex: ABC1234)",
-                            value: plateSearch,
-                            onChange: e => setPlateSearch(e.target.value),
-                            className: "w-full max-w-sm p-2 border border-gray-300 rounded-md shadow-sm"
-                        }),
-                        React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition", disabled: isLoading },
-                            isLoading ? 'Buscando...' : 'Buscar'
-                        )
-                    ),
-                    React.createElement('div', { className: "overflow-x-auto" },
-                        React.createElement('table', { className: "min-w-full bg-white text-sm" },
-                            React.createElement('thead', { className: "bg-gray-100" },
-                                React.createElement('tr', null,
-                                    ["Apelido", "Cód. SAP", "Data Início", "Data Fim", "Período (dias)", "Status"].map(h => React.createElement('th', { key: h, className: "p-2 text-left" }, h))
-                                )
+    // NOVO: Função para criar a "tag" de status
+    const getStatusBadge = (status) => {
+        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
+        if (status === 'Ativo') {
+            return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, "Ativo");
+        }
+        return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, "Inativo");
+    };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Consulta de Histórico de Placas"),
+        
+        // ATUALIZADO: Formulário de busca com melhor estilo
+        React.createElement('form', { onSubmit: handleSearch, className: "mb-8 p-4 border rounded-lg bg-gray-50 flex flex-col sm:flex-row items-center gap-4" },
+            React.createElement('input', {
+                type: "text",
+                placeholder: "Digite a placa (ex: ABC1234)",
+                value: plateSearch,
+                onChange: e => setPlateSearch(e.target.value),
+                className: "w-full p-2 border border-gray-300 rounded-md shadow-sm flex-grow"
+            }),
+            React.createElement('button', { type: "submit", className: "w-full sm:w-auto py-2 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition", disabled: isLoading },
+                isLoading ? 'Buscando...' : 'Buscar'
+            )
+        ),
+
+        // ATUALIZADO: Tabela com o novo estilo "Contraste Suave"
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ["Apelido", "Cód. SAP", "Data Início", "Data Fim", "Período (dias)", "Status"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
+                    !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center text-slate-500" }, "Digite uma placa para buscar seu histórico.")) :
+                    historyResults.length === 0 ?
+                    React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhum histórico encontrado para esta placa.")) :
+                    historyResults.map((rec, index) =>
+                        React.createElement('tr', { key: rec.codSAP + rec.data_inicio + index, className: "hover:bg-blue-50 even:bg-slate-50" },
+                            // Destaque na coluna Apelido
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                                React.createElement('span', { className: "font-medium text-slate-800" }, rec.apelido)
                             ),
-                            React.createElement('tbody', { className: "divide-y" },
-                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
-                                !hasSearched ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center text-gray-500" }, "Digite uma placa para buscar seu histórico.")) :
-                                historyResults.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhum histórico encontrado para esta placa.")) :
-                                historyResults.map((rec, index) =>
-                                    React.createElement('tr', { key: rec.codSAP + rec.data_inicio + index, className: "hover:bg-gray-50" },
-                                        React.createElement('td', { className: "p-2" }, rec.apelido),
-                                        React.createElement('td', { className: "p-2" }, rec.codSAP),
-                                        React.createElement('td', { className: "p-2" }, formatDate(rec.data_inicio)),
-                                        React.createElement('td', { className: "p-2" }, formatDate(rec.data_fim)),
-                                        React.createElement('td', { className: "p-2" }, calculateDays(rec.data_inicio, rec.data_fim)),
-                                        React.createElement('td', { className: `p-2 font-semibold ${!rec.data_fim ? 'text-green-600' : 'text-red-600'}` },
-                                            !rec.data_fim ? 'Ativo' : 'Inativo'
-                                        )
-                                    )
-                                )
-                            )
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(rec.data_inicio)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(rec.data_fim)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, calculateDays(rec.data_inicio, rec.data_fim)),
+                            // ATUALIZADO: Usando a tag de status
+                            React.createElement('td', { className: "px-6 py-4" }, getStatusBadge(rec.data_fim ? 'Inativo' : 'Ativo'))
                         )
                     )
-                );
-            }
-/* INÍCIO DO CÓDIGO PARA SUBSTITUIR TODA A FUNÇÃO ExpenseQuery */
+                )
+            )
+        )
+    );
+}
 
 function ExpenseQuery({ userId, userRole, showToast }) {
     const [periodo, setPeriodo] = React.useState('');
@@ -3099,6 +3107,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
