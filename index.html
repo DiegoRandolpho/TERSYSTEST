@@ -727,7 +727,6 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
                 showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir usuário "${userToDelete?.username}"?`, onConfirm: handleDeleteUser, onCancel: () => setShowConfirmModal(false) })
               );
             }
-
 function ThirdPartyManagement({ userId, showToast }) {
     const [terceirosList, setTerceirosList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -735,10 +734,10 @@ function ThirdPartyManagement({ userId, showToast }) {
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
     
-    // ATUALIZADO: Adicionados todos os novos campos ao estado inicial do formulário
+    // CORRIGIDO: Removido 'nome_completo' do estado inicial
     const initialFormState = { 
         apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '', 
-        razao: '', nome_completo: '', rua: '', bairro: '', cidade: '', estado: '', cep: '' 
+        razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '' 
     };
 
     const [formData, setFormData] = React.useState(initialFormState);
@@ -781,7 +780,7 @@ function ThirdPartyManagement({ userId, showToast }) {
         }
         setIsLoading(true);
         try {
-            // ATUALIZADO: Inclui todos os novos campos no registro a ser salvo
+            // CORRIGIDO: Removido 'nome_completo' do registro a ser salvo
             const record = {
                 apelido: formData.apelido.trim(),
                 codSAP: formData.codSAP.trim(),
@@ -789,7 +788,6 @@ function ThirdPartyManagement({ userId, showToast }) {
                 nome: formData.nome.trim(),
                 cpf: formData.cpf.replace(/[^\d]/g, ''),
                 razao: formData.razao.trim(),
-                nome_completo: formData.nome_completo.trim(),
                 rua: formData.rua.trim(),
                 bairro: formData.bairro.trim(),
                 cidade: formData.cidade.trim(),
@@ -819,7 +817,7 @@ function ThirdPartyManagement({ userId, showToast }) {
     const handleEditClick = (terceiro) => {
         setIsEditing(true);
         setCurrentTerceiro(terceiro);
-        // ATUALIZADO: Carrega todos os campos (novos e antigos) no formulário
+        // CORRIGIDO: Removido 'nome_completo' dos dados do formulário de edição
         setFormData({
             apelido: terceiro.apelido || '',
             codSAP: terceiro.codSAP || '',
@@ -827,7 +825,6 @@ function ThirdPartyManagement({ userId, showToast }) {
             nome: terceiro.nome || '',
             cpf: formatCPF(terceiro.cpf) || '',
             razao: terceiro.razao || '',
-            nome_completo: terceiro.nome_completo || '',
             rua: terceiro.rua || '',
             bairro: terceiro.bairro || '',
             cidade: terceiro.cidade || '',
@@ -864,7 +861,6 @@ function ThirdPartyManagement({ userId, showToast }) {
         setIsLoading(false);
     };
 
-    // ATUALIZADO: Busca agora inclui todos os novos campos
     const filteredList = terceirosList.filter(t =>
         Object.values(t).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -878,10 +874,10 @@ function ThirdPartyManagement({ userId, showToast }) {
             )
         ),
         showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
-            // ATUALIZADO: Formulário agora com todos os campos novos
+            // CORRIGIDO: Campo 'nome_completo' alterado para 'nome'
             React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "razao", value: formData.razao, onChange: handleInputChange, placeholder: "Razão Social", className: "p-2 border rounded" }),
-            React.createElement('input', { name: "nome_completo", value: formData.nome_completo, onChange: handleInputChange, placeholder: "Nome Completo", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "nome", value: formData.nome, onChange: handleInputChange, placeholder: "Nome Completo", className: "p-2 border rounded" }),
             React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
@@ -898,7 +894,6 @@ function ThirdPartyManagement({ userId, showToast }) {
         ),
         React.createElement('input', { type: "text", placeholder: "Buscar em todos os campos...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
         
-        // ATUALIZADO: Tabela com novo estilo e novas colunas
         React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
@@ -913,7 +908,8 @@ function ThirdPartyManagement({ userId, showToast }) {
                         React.createElement('tr', { key: t.id, className: "hover:bg-blue-50 even:bg-slate-50" },
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, t.apelido)),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.razao),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.nome_completo),
+                            // CORRIGIDO: Exibindo 't.nome' na coluna "Nome Completo"
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.nome),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.codSAP),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(t.cnpj)),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(t.cpf)),
@@ -932,9 +928,6 @@ function ThirdPartyManagement({ userId, showToast }) {
         showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
     );
 }
-
-/* FIM DO CÓDIGO COMPLETO */
-
            function ConcessionManagement({ userId, userRole, showToast }) {
                 const [concessions, setConcessions] = React.useState([]);
                 const [isLoading, setIsLoading] = React.useState(false);
@@ -3106,6 +3099,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
