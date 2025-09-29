@@ -1738,7 +1738,132 @@ function ContractManagement({ userId, userRole, showToast }) {
     );
 }
 /* INÍCIO DO CÓDIGO PARA ADICIONAR A FUNÇÃO TurnoverDashboard */
+/* INÍCIO DO CÓDIGO DO NOVO COMPONENTE ThirdPartyByRegion */
 
+function ThirdPartyByRegion({ showToast }) {
+    const [reportData, setReportData] = React.useState([]);
+    const [filteredData, setFilteredData] = React.useState([]);
+    const [branches, setBranches] = React.useState([]);
+    const [selectedBranch, setSelectedBranch] = React.useState('all');
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    // Efeito para buscar e cruzar todos os dados necessários
+    React.useEffect(() => {
+        const fetchReportData = async () => {
+            setIsLoading(true);
+            try {
+                // 1. Pega a localização atual de todas as placas ativas
+                const { data: locations, error: locationsError } = await supabase
+                    .from('trocasFilial')
+                    .select('plate, newBranch')
+                    .is('ending_date', null);
+                if (locationsError) throw locationsError;
+                const locationMap = new Map(locations.map(l => [l.plate, l.newBranch]));
+
+                // 2. Pega todas as concessões ativas (placa -> terceiro)
+                const { data: concessions, error: concessionsError } = await supabase
+                    .from('concessao')
+                    .select('placa, codSAP')
+                    .is('data_fim', null);
+                if (concessionsError) throw concessionsError;
+
+                // 3. Pega os detalhes de todos os terceiros
+                const { data: terceiros, error: terceirosError } = await supabase
+                    .from('terceiros')
+                    .select('codSAP, apelido, razao, cnpj');
+                if (terceirosError) throw terceirosError;
+                const terceirosMap = new Map(terceiros.map(t => [t.codSAP, t]));
+
+                // 4. Junta todas as informações
+                const joinedData = concessions.map(con => {
+                    const terceiroInfo = terceirosMap.get(con.codSAP);
+                    const region = locationMap.get(con.placa);
+                    if (!terceiroInfo || !region) return null; // Ignora se não encontrar dados completos
+
+                    return {
+                        id: `${con.placa}-${con.codSAP}`,
+                        region: region,
+                        apelido: terceiroInfo.apelido,
+                        razao: terceiroInfo.razao,
+                        cnpj: terceiroInfo.cnpj,
+                        placa: con.placa,
+                    };
+                }).filter(Boolean); // Remove os nulos
+
+                setReportData(joinedData);
+                setFilteredData(joinedData); // Inicialmente mostra tudo
+                
+                // 5. Pega a lista de filiais para o filtro
+                const { data: branchList, error: branchError } = await supabase.from('filiais').select('name').order('name');
+                if (branchError) throw branchError;
+                setBranches(branchList.map(b => b.name));
+
+            } catch (err) {
+                showToast(`Erro ao gerar o relatório: ${err.message}`, 'error');
+            }
+            setIsLoading(false);
+        };
+
+        fetchReportData();
+    }, [showToast]);
+
+    // Efeito para aplicar o filtro quando o usuário muda a seleção
+    React.useEffect(() => {
+        if (selectedBranch === 'all') {
+            setFilteredData(reportData);
+        } else {
+            setFilteredData(reportData.filter(item => item.region === selectedBranch));
+        }
+    }, [selectedBranch, reportData]);
+
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Relatório de Terceiros por Região"),
+        
+        // Filtro por Região
+        React.createElement('div', { className: "mb-6 p-4 border rounded-lg bg-gray-50 max-w-sm mx-auto" },
+             React.createElement('label', { htmlFor: 'branch-filter', className: "block text-sm font-medium text-gray-700 mb-1" }, "Filtrar por Filial (Região)"),
+             React.createElement('select', { 
+                id: 'branch-filter',
+                value: selectedBranch, 
+                onChange: e => setSelectedBranch(e.target.value), 
+                className: "w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+             },
+                React.createElement('option', { value: 'all' }, 'Todas as Filiais'),
+                branches.map(b => React.createElement('option', { key: b, value: b }, b))
+            )
+        ),
+        
+        // Tabela de Resultados
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ["Região (Filial)", "Apelido", "Placa", "Razão Social", "CNPJ"].map(h => 
+                            React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h)
+                        )
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center" }, "Carregando...")) :
+                    filteredData.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 5, className: "p-4 text-center text-slate-500" }, "Nenhum terceiro encontrado para a região selecionada.")) :
+                    filteredData.map(item => React.createElement('tr', { key: item.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, item.region)
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.apelido),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.placa),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, item.razao),
+                        React.createElement('td', { className: "px-6 py-4" }, formatCNPJ(item.cnpj))
+                    ))
+                )
+            )
+        )
+    );
+}
+
+/* FIM DO CÓDIGO DO NOVO COMPONENTE */
+            
 function TurnoverDashboard({ showToast }) {
     const [stats, setStats] = React.useState({ contratacoes: 0, encerramentos: 0, trocas: 0, turnover: 0 });
     const [periodo, setPeriodo] = React.useState('');
@@ -3262,6 +3387,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
