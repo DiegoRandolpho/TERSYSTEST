@@ -727,191 +727,213 @@ React.createElement('div', { className: "rounded-lg border border-gray-200 shado
                 showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir usuário "${userToDelete?.username}"?`, onConfirm: handleDeleteUser, onCancel: () => setShowConfirmModal(false) })
               );
             }
-            
-            function ThirdPartyManagement({ userId, showToast }) {
-              const [terceirosList, setTerceirosList] = React.useState([]);
-              const [isLoading, setIsLoading] = React.useState(false);
-              const [showForm, setShowForm] = React.useState(false);
-              const [isEditing, setIsEditing] = React.useState(false);
-              const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
-              // ATUALIZADO: Adicionado nome e cpf
-              const initialFormState = { apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '' };
-              const [formData, setFormData] = React.useState(initialFormState);
-              const [searchTerm, setSearchTerm] = React.useState('');
-              const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-              const [terceiroToDelete, setTerceiroToDelete] = React.useState(null);
-              
-              const fetchTerceiros = React.useCallback(async () => {
-                setIsLoading(true);
-                try {
-                  const { data, error } = await supabase.from('terceiros').select('*').order('apelido', { ascending: true });
-                  if (error) throw error;
-                  setTerceirosList(data || []);
-                } catch (err) {
-                  showToast("Erro ao carregar terceiros.", "error");
-                }
-                setIsLoading(false);
-              }, [showToast]);
 
-              React.useEffect(() => {
-                fetchTerceiros();
-              }, [fetchTerceiros]);
+function ThirdPartyManagement({ userId, showToast }) {
+    const [terceirosList, setTerceirosList] = React.useState([]);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showForm, setShowForm] = React.useState(false);
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
+    
+    // ATUALIZADO: Adicionados todos os novos campos ao estado inicial do formulário
+    const initialFormState = { 
+        apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '', 
+        razao: '', nome_completo: '', rua: '', bairro: '', cidade: '', estado: '', cep: '' 
+    };
 
-              // ATUALIZADO: handleInputChange agora formata CPF
-              const handleInputChange = (e) => {
-                const { name, value } = e.target;
-                let processedValue = value;
-                if (name === 'cnpj') {
-                    processedValue = formatCNPJ(value);
-                } else if (name === 'cpf') {
-                    processedValue = formatCPF(value);
-                }
-                setFormData(prev => ({ ...prev, [name]: processedValue }));
-              };
-          
-              const handleFormSubmit = async (e) => {
-                e.preventDefault();
-                if (!formData.apelido.trim() || !formData.codSAP.trim() || !formData.cnpj.trim()) {
-                  showToast("Por favor, preencha os campos obrigatórios (Apelido, Cód. SAP, CNPJ).", "error");
-                  return;
-                }
-                setIsLoading(true);
-                try {
-                  // ATUALIZADO: Salva CPF sem máscara
-                  const record = {
-                      apelido: formData.apelido.trim(),
-                      codSAP: formData.codSAP.trim(),
-                      cnpj: formData.cnpj.replace(/[^\d]/g, ''),
-                      nome: formData.nome.trim(),
-                      cpf: formData.cpf.replace(/[^\d]/g, '')
-                  };
+    const [formData, setFormData] = React.useState(initialFormState);
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+    const [terceiroToDelete, setTerceiroToDelete] = React.useState(null);
 
-                  if (isEditing) {
-                    const { error } = await supabase.from('terceiros').update(record).eq('id', currentTerceiro.id);
-                    if (error) throw error;
-                    showToast("Terceiro atualizado com sucesso!", "success");
-                  } else {
-                    const { error } = await supabase.from('terceiros').insert([{ ...record, usuarioCriacao: userId }]);
-                    if (error) throw error;
-                    showToast("Terceiro cadastrado com sucesso!", "success");
-                  }
-                  setShowForm(false);
-                  setIsEditing(false);
-                  setFormData(initialFormState);
-                  fetchTerceiros();
-                } catch (err) {
-                  showToast(`Erro ao salvar terceiro: ${err.message}`, "error");
-                }
-                setIsLoading(false);
-              };
+    const fetchTerceiros = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.from('terceiros').select('*').order('apelido', { ascending: true });
+            if (error) throw error;
+            setTerceirosList(data || []);
+        } catch (err) {
+            showToast("Erro ao carregar terceiros.", "error");
+        }
+        setIsLoading(false);
+    }, [showToast]);
 
-              const handleEditClick = (terceiro) => {
-                setIsEditing(true);
-                setCurrentTerceiro(terceiro);
-                // ATUALIZADO: Carrega nome e cpf no formulário de edição
-                setFormData({
-                    apelido: terceiro.apelido || '',
-                    codSAP: terceiro.codSAP || '',
-                    cnpj: formatCNPJ(terceiro.cnpj) || '',
-                    nome: terceiro.nome || '',
-                    cpf: formatCPF(terceiro.cpf) || ''
-                });
-                setShowForm(true);
-              };
+    React.useEffect(() => {
+        fetchTerceiros();
+    }, [fetchTerceiros]);
 
-              const handleCancel = () => {
-                setShowForm(false);
-                setIsEditing(false);
-                setFormData(initialFormState);
-              };
-          
-              const confirmDelete = (terceiro) => {
-                setTerceiroToDelete(terceiro);
-                setShowConfirmModal(true);
-              };
-          
-              const handleDelete = async () => {
-                if (!terceiroToDelete) return;
-                setIsLoading(true);
-                try {
-                  const { error } = await supabase.from('terceiros').delete().eq('id', terceiroToDelete.id);
-                  if (error) throw error;
-                  showToast("Terceiro excluído com sucesso!", "success");
-                  fetchTerceiros();
-                } catch (err) {
-                  showToast("Erro ao excluir terceiro.", "error");
-                }
-                setShowConfirmModal(false);
-                setTerceiroToDelete(null);
-                setIsLoading(false);
-              };
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        let processedValue = value;
+        if (name === 'cnpj') {
+            processedValue = formatCNPJ(value);
+        } else if (name === 'cpf') {
+            processedValue = formatCPF(value);
+        }
+        setFormData(prev => ({ ...prev, [name]: processedValue }));
+    };
 
-              // ATUALIZADO: Busca inclui nome e cpf
-              const filteredList = terceirosList.filter(t =>
-                (t.apelido && t.apelido.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (t.codSAP && t.codSAP.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (t.cnpj && t.cnpj.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (t.nome && t.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (t.cpf && t.cpf.toLowerCase().includes(searchTerm.toLowerCase()))
-              );
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.apelido.trim() || !formData.codSAP.trim() || !formData.cnpj.trim()) {
+            showToast("Por favor, preencha os campos obrigatórios (Apelido, Cód. SAP, CNPJ).", "error");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            // ATUALIZADO: Inclui todos os novos campos no registro a ser salvo
+            const record = {
+                apelido: formData.apelido.trim(),
+                codSAP: formData.codSAP.trim(),
+                cnpj: formData.cnpj.replace(/[^\d]/g, ''),
+                nome: formData.nome.trim(),
+                cpf: formData.cpf.replace(/[^\d]/g, ''),
+                razao: formData.razao.trim(),
+                nome_completo: formData.nome_completo.trim(),
+                rua: formData.rua.trim(),
+                bairro: formData.bairro.trim(),
+                cidade: formData.cidade.trim(),
+                estado: formData.estado.trim(),
+                cep: formData.cep.trim()
+            };
 
-              return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-                React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Terceiros"),
-                !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
-                  React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" }, 
-                    React.createElement(LucideIcon, {name: 'PlusCircle', className: 'mr-2'}),
-                    "Cadastrar Novo Terceiro"
-                  )
-                ),
-                showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-                  React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido*", className: "p-2 border rounded" }),
-                  React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
-                  React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
-                  // ATUALIZADO: Novos campos de input
-                  React.createElement('input', { name: "nome", value: formData.nome, onChange: handleInputChange, placeholder: "Nome", className: "p-2 border rounded" }),
-                  React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
-                  React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
-                    React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
-                    React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
-                  )
-                ),
-                React.createElement('input', { type: "text", placeholder: "Buscar...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-                React.createElement('div', { className: "overflow-x-auto" },
-                  React.createElement('table', { className: "min-w-full bg-white text-sm" },
-                    React.createElement('thead', { className: "bg-gray-100" },
-                      React.createElement('tr', null,
-                        // ATUALIZADO: Novos cabeçalhos
-                        React.createElement('th', { className: "p-2 text-left" }, "Apelido"),
-                        React.createElement('th', { className: "p-2 text-left" }, "Nome"),
-                        React.createElement('th', { className: "p-2 text-left" }, "Código SAP"),
-                        React.createElement('th', { className: "p-2 text-left" }, "CNPJ"),
-                        React.createElement('th', { className: "p-2 text-left" }, "CPF"),
-                        React.createElement('th', { className: "p-2 text-right" }, "Ações")
-                      )
-                    ),
-                    React.createElement('tbody', { className: "divide-y" },
-                      isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Carregando...")) :
-                      !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 6, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
-                      filteredList.map(t =>
-                        React.createElement('tr', { key: t.id, className: "hover:bg-gray-50" },
-                          // ATUALIZADO: Novas células
-                          React.createElement('td', { className: "p-2" }, t.apelido),
-                          React.createElement('td', { className: "p-2" }, t.nome),
-                          React.createElement('td', { className: "p-2" }, t.codSAP),
-                          React.createElement('td', { className: "p-2" }, formatCNPJ(t.cnpj)),
-                          React.createElement('td', { className: "p-2" }, formatCPF(t.cpf)),
-                          React.createElement('td', { className: "p-2 text-right whitespace-nowrap" },
-                            React.createElement('button', { onClick: () => handleEditClick(t), className: "text-blue-600 mr-2 p-1 hover:bg-blue-100 rounded-full", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit' })),
-                            React.createElement('button', { onClick: () => confirmDelete(t), className: "text-red-600 p-1 hover:bg-red-100 rounded-full", title: "Excluir" }, React.createElement(LucideIcon, { name: 'Trash2' }))
-                          )
-                        )
-                      )
-                    )
-                  )
-                ),
-                showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
-              );
+            if (isEditing) {
+                const { error } = await supabase.from('terceiros').update(record).eq('id', currentTerceiro.id);
+                if (error) throw error;
+                showToast("Terceiro atualizado com sucesso!", "success");
+            } else {
+                const { error } = await supabase.from('terceiros').insert([{ ...record, usuarioCriacao: userId }]);
+                if (error) throw error;
+                showToast("Terceiro cadastrado com sucesso!", "success");
             }
+            setShowForm(false);
+            setIsEditing(false);
+            setFormData(initialFormState);
+            fetchTerceiros();
+        } catch (err) {
+            showToast(`Erro ao salvar terceiro: ${err.message}`, "error");
+        }
+        setIsLoading(false);
+    };
+
+    const handleEditClick = (terceiro) => {
+        setIsEditing(true);
+        setCurrentTerceiro(terceiro);
+        // ATUALIZADO: Carrega todos os campos (novos e antigos) no formulário
+        setFormData({
+            apelido: terceiro.apelido || '',
+            codSAP: terceiro.codSAP || '',
+            cnpj: formatCNPJ(terceiro.cnpj) || '',
+            nome: terceiro.nome || '',
+            cpf: formatCPF(terceiro.cpf) || '',
+            razao: terceiro.razao || '',
+            nome_completo: terceiro.nome_completo || '',
+            rua: terceiro.rua || '',
+            bairro: terceiro.bairro || '',
+            cidade: terceiro.cidade || '',
+            estado: terceiro.estado || '',
+            cep: terceiro.cep || ''
+        });
+        setShowForm(true);
+    };
+
+    const handleCancel = () => {
+        setShowForm(false);
+        setIsEditing(false);
+        setFormData(initialFormState);
+    };
+
+    const confirmDelete = (terceiro) => {
+        setTerceiroToDelete(terceiro);
+        setShowConfirmModal(true);
+    };
+
+    const handleDelete = async () => {
+        if (!terceiroToDelete) return;
+        setIsLoading(true);
+        try {
+            const { error } = await supabase.from('terceiros').delete().eq('id', terceiroToDelete.id);
+            if (error) throw error;
+            showToast("Terceiro excluído com sucesso!", "success");
+            fetchTerceiros();
+        } catch (err) {
+            showToast("Erro ao excluir terceiro.", "error");
+        }
+        setShowConfirmModal(false);
+        setTerceiroToDelete(null);
+        setIsLoading(false);
+    };
+
+    // ATUALIZADO: Busca agora inclui todos os novos campos
+    const filteredList = terceirosList.filter(t =>
+        Object.values(t).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Terceiros"),
+        !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+            React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
+                React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
+                "Cadastrar Novo Terceiro"
+            )
+        ),
+        showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded" },
+            // ATUALIZADO: Formulário agora com todos os campos novos
+            React.createElement('input', { name: "apelido", value: formData.apelido, onChange: handleInputChange, placeholder: "Apelido*", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "razao", value: formData.razao, onChange: handleInputChange, placeholder: "Razão Social", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "nome_completo", value: formData.nome_completo, onChange: handleInputChange, placeholder: "Nome Completo", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "cep", value: formData.cep, onChange: handleInputChange, placeholder: "CEP", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "rua", value: formData.rua, onChange: handleInputChange, placeholder: "Rua", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "bairro", value: formData.bairro, onChange: handleInputChange, placeholder: "Bairro", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder: "Cidade", className: "p-2 border rounded" }),
+            React.createElement('input', { name: "estado", value: formData.estado, onChange: handleInputChange, placeholder: "Estado", className: "p-2 border rounded" }),
+
+            React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
+                React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+            )
+        ),
+        React.createElement('input', { type: "text", placeholder: "Buscar em todos os campos...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+        
+        // ATUALIZADO: Tabela com novo estilo e novas colunas
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
+                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
+                    filteredList.map(t =>
+                        React.createElement('tr', { key: t.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, t.apelido)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.razao),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.nome_completo),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.codSAP),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(t.cnpj)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(t.cpf)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `${t.rua || ''}, ${t.bairro || ''} - ${t.cidade || ''}/${t.estado || ''}`),
+                            React.createElement('td', { className: "px-6 py-4 text-center" },
+                                React.createElement('div', { className: "flex justify-center gap-x-4" },
+                                    React.createElement('button', { onClick: () => handleEditClick(t), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                    React.createElement('button', { onClick: () => confirmDelete(t), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Excluir" }, React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' }))
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ),
+        showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
+    );
+}
+
+/* FIM DO CÓDIGO COMPLETO */
 
            function ConcessionManagement({ userId, userRole, showToast }) {
                 const [concessions, setConcessions] = React.useState([]);
@@ -3084,6 +3106,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
