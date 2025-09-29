@@ -1165,9 +1165,11 @@ function ConcessionManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
+/* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ContractManagement */
+
 function ContractManagement({ userId, userRole, showToast }) {
-    const [category, setCategory] = React.useState('Contratação');
+    // ATUALIZADO: Categoria inicial alterada
+    const [category, setCategory] = React.useState('Concessão de Placa (Entrada)');
     const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
     const [formData, setFormData] = React.useState(initialFormState);
     const [terceiros, setTerceiros] = React.useState([]);
@@ -1176,16 +1178,16 @@ function ContractManagement({ userId, userRole, showToast }) {
     const [history, setHistory] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    // NOVO: Função para criar a "tag" de categoria
+    // ATUALIZADO: Nomes das categorias nas tags
     const getCategoryBadge = (category) => {
         const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
         switch (category) {
-            case 'Contratação':
+            case 'Concessão de Placa (Entrada)':
                 return React.createElement('span', { className: `bg-green-100 text-green-800 ${baseClasses}` }, category);
             case 'Troca de Placa':
                 return React.createElement('span', { className: `bg-yellow-100 text-yellow-800 ${baseClasses}` }, category);
             case 'Encerramento':
-            case 'Encerramento de Placa':
+            case 'Concessão de Placa (Saída)':
                 return React.createElement('span', { className: `bg-red-100 text-red-800 ${baseClasses}` }, category);
             default:
                 return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, category);
@@ -1216,7 +1218,7 @@ function ContractManagement({ userId, userRole, showToast }) {
 
     React.useEffect(() => {
         const fetchActiveConcessions = async () => {
-            if ((category === 'Troca de Placa' || category === 'Encerramento de Placa') && formData.codSAP) {
+            if ((category === 'Troca de Placa' || category === 'Concessão de Placa (Saída)') && formData.codSAP) {
                 setIsLoading(true);
                 const { data, error } = await supabase
                     .from('concessao')
@@ -1251,8 +1253,9 @@ function ContractManagement({ userId, userRole, showToast }) {
             const { error: contractError } = await supabase.from('contrato_distrato').insert([contractData]);
             if (contractError) throw contractError;
             
+            // ATUALIZADO: Cases com os novos nomes
             switch (category) {
-                case 'Contratação':
+                case 'Concessão de Placa (Entrada)':
                     const { error: hireError } = await supabase.from('concessao').insert([{
                         codSAP: formData.codSAP,
                         placa: formData.placa,
@@ -1264,12 +1267,7 @@ function ContractManagement({ userId, userRole, showToast }) {
                 case 'Troca de Placa':
                     const endDate = new Date(formData.data_alteracao);
                     endDate.setDate(endDate.getDate() - 1);
-                    const { error: endError } = await supabase
-                        .from('concessao')
-                        .update({ data_fim: endDate.toISOString().split('T')[0] })
-                        .eq('codSAP', formData.codSAP)
-                        .eq('placa', formData.placa_antiga)
-                        .is('data_fim', null);
+                    const { error: endError } = await supabase.from('concessao').update({ data_fim: endDate.toISOString().split('T')[0] }).eq('codSAP', formData.codSAP).eq('placa', formData.placa_antiga).is('data_fim', null);
                     if (endError) throw endError;
                     const { error: newPlateError } = await supabase.from('concessao').insert([{
                         codSAP: formData.codSAP,
@@ -1279,21 +1277,12 @@ function ContractManagement({ userId, userRole, showToast }) {
                     }]);
                     if (newPlateError) throw newPlateError;
                     break;
-                case 'Encerramento de Placa':
-                    const { error: terminatePlateError } = await supabase
-                        .from('concessao')
-                        .update({ data_fim: formData.data_alteracao })
-                        .eq('codSAP', formData.codSAP)
-                        .eq('placa', formData.placa)
-                        .is('data_fim', null);
+                case 'Concessão de Placa (Saída)':
+                    const { error: terminatePlateError } = await supabase.from('concessao').update({ data_fim: formData.data_alteracao }).eq('codSAP', formData.codSAP).eq('placa', formData.placa).is('data_fim', null);
                     if (terminatePlateError) throw terminatePlateError;
                     break;
                 case 'Encerramento':
-                    const { error: terminateError } = await supabase
-                        .from('concessao')
-                        .update({ data_fim: formData.data_alteracao })
-                        .eq('codSAP', formData.codSAP)
-                        .is('data_fim', null);
+                    const { error: terminateError } = await supabase.from('concessao').update({ data_fim: formData.data_alteracao }).eq('codSAP', formData.codSAP).is('data_fim', null);
                     if (terminateError) throw terminateError;
                     break;
             }
@@ -1323,7 +1312,7 @@ function ContractManagement({ userId, userRole, showToast }) {
             React.createElement('input', { key: 'atraso', name: 'atraso', type: 'number', value: formData.atraso, onChange: handleInputChange, placeholder: "Atraso (dias)", className: "p-2 border rounded", required: true })
         ];
         switch (category) {
-            case 'Contratação':
+            case 'Concessão de Placa (Entrada)':
                 return [
                     ...commonFields,
                     React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true },
@@ -1345,7 +1334,7 @@ function ContractManagement({ userId, userRole, showToast }) {
                     ),
                     React.createElement('input', { key: 'valorfixo', name: 'valorfixo', type: 'number', step: '0.01', value: formData.valorfixo, onChange: handleInputChange, placeholder: "Novo Valor Fixo", className: "p-2 border rounded", required: true })
                 ];
-            case 'Encerramento de Placa':
+            case 'Concessão de Placa (Saída)':
                 return [
                     ...commonFields.slice(0, 1),
                     React.createElement('select', { key: 'placa', name: 'placa', value: formData.placa, onChange: handleInputChange, className: "p-2 border rounded", required: true, disabled: activeConcessions.length === 0 },
@@ -1360,6 +1349,54 @@ function ContractManagement({ userId, userRole, showToast }) {
                 return [];
         }
     };
+
+    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
+        React.createElement('div', { className: "mb-6" },
+            React.createElement('div', { className: "flex justify-center border-b" },
+                // ATUALIZADO: Nomes dos botões/abas
+                ['Concessão de Placa (Entrada)', 'Troca de Placa', 'Encerramento', 'Concessão de Placa (Saída)'].map(cat => (
+                    React.createElement('button', {
+                        key: cat,
+                        onClick: () => { setCategory(cat); setFormData(initialFormState); },
+                        className: `py-2 px-4 text-sm font-medium ${category === cat ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+                    }, cat)
+                ))
+            )
+        ),
+        React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 border rounded" },
+            renderFormFields(),
+            React.createElement('div', { className: "lg:col-span-3 flex justify-end" },
+                React.createElement('button', { type: "submit", className: "py-2 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition", disabled: isLoading },
+                    isLoading ? 'Processando...' : 'Executar Operação'
+                )
+            )
+        ),
+        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Histórico de Operações"),
+        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                    React.createElement('tr', null,
+                        ['Data', 'Cód. SAP', 'Categoria', 'Atraso (dias)'].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                    )
+                ),
+                React.createElement('tbody', null,
+                    isLoading && history.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando...")) :
+                    history.map(rec => React.createElement('tr', { key: rec.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                            React.createElement('span', { className: 'font-medium text-slate-800' }, formatDate(rec.data_alteracao))
+                        ),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, rec.codSAP),
+                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, getCategoryBadge(rec.categoria)),
+                        React.createElement('td', { className: "px-6 py-4" }, rec.atraso)
+                    ))
+                )
+            )
+        )
+    );
+}
+
+/* FIM DO CÓDIGO CORRIGIDO */
 
     return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
         React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-6 text-center" }, "Contrato/Distrato"),
@@ -3153,6 +3190,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
