@@ -3288,6 +3288,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                     switch (currentPage) {
                         case 'dashboard': return React.createElement(Dashboard, { userId, showToast });
                         case 'turnoverDashboard': return React.createElement(TurnoverDashboard, { showToast });
+                        case 'thirdPartyByRegion': return React.createElement(ThirdPartyByRegion, { showToast });
                         case 'outsourcingDistribution': return React.createElement(OutsourcingDistribution, { userId, showToast, setCurrentPage });
                         case 'branchTransfer': return React.createElement(BranchTransfer, { userId, setCurrentPage, showToast });
                         case 'concessionManagement': return React.createElement(ConcessionManagement, { userId, userRole, showToast });
@@ -3324,6 +3325,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         React.createElement(MenuCategory, { title: "Relatórios", icon: "FileText", menuKey: "relatorios" },
             React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
             React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover' }),
+            React.createElement(MenuItem, { page: 'thirdPartyByRegion', icon: 'Building', text: 'Terceiros por Região' }),
             React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distr. Região' }),
             // MOVIDO: Itens que estavam em "Operacional" agora estão aqui
             React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
@@ -3387,6 +3389,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
