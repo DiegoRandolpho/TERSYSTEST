@@ -660,9 +660,10 @@ function ThirdPartyManagement({ userId, showToast }) {
     const [isEditing, setIsEditing] = React.useState(false);
     const [currentTerceiro, setCurrentTerceiro] = React.useState(null);
     
+    // ATUALIZADO: Adicionado 'email' ao estado inicial do formulário
     const initialFormState = { 
         apelido: '', codSAP: '', cnpj: '', nome: '', cpf: '', 
-        razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '' 
+        razao: '', rua: '', bairro: '', cidade: '', estado: '', cep: '', email: '' 
     };
 
     const [formData, setFormData] = React.useState(initialFormState);
@@ -705,6 +706,7 @@ function ThirdPartyManagement({ userId, showToast }) {
         }
         setIsLoading(true);
         try {
+            // ATUALIZADO: Incluído 'email' no registro a ser salvo
             const record = {
                 apelido: formData.apelido.trim(),
                 codSAP: formData.codSAP.trim(),
@@ -716,7 +718,8 @@ function ThirdPartyManagement({ userId, showToast }) {
                 bairro: formData.bairro.trim(),
                 cidade: formData.cidade.trim(),
                 estado: formData.estado.trim(),
-                cep: formData.cep.trim()
+                cep: formData.cep.trim(),
+                email: formData.email.trim()
             };
 
             if (isEditing) {
@@ -741,6 +744,7 @@ function ThirdPartyManagement({ userId, showToast }) {
     const handleEditClick = (terceiro) => {
         setIsEditing(true);
         setCurrentTerceiro(terceiro);
+        // ATUALIZADO: Carrega o email no formulário de edição
         setFormData({
             apelido: terceiro.apelido || '',
             codSAP: terceiro.codSAP || '',
@@ -752,7 +756,8 @@ function ThirdPartyManagement({ userId, showToast }) {
             bairro: terceiro.bairro || '',
             cidade: terceiro.cidade || '',
             estado: terceiro.estado || '',
-            cep: terceiro.cep || ''
+            cep: terceiro.cep || '',
+            email: terceiro.email || ''
         });
         setShowForm(true);
     };
@@ -803,11 +808,14 @@ function ThirdPartyManagement({ userId, showToast }) {
             React.createElement('input', { name: "codSAP", value: formData.codSAP, onChange: handleInputChange, placeholder: "Código SAP*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cnpj", value: formData.cnpj, onChange: handleInputChange, placeholder: "CNPJ*", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cpf", value: formData.cpf, onChange: handleInputChange, placeholder: "CPF", className: "p-2 border rounded" }),
+            // NOVO: Campo de input para o E-mail
+            React.createElement('input', { name: "email", type: "email", value: formData.email, onChange: handleInputChange, placeholder: "E-mail", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cep", value: formData.cep, onChange: handleInputChange, placeholder: "CEP", className: "p-2 border rounded" }),
             React.createElement('input', { name: "rua", value: formData.rua, onChange: handleInputChange, placeholder: "Rua", className: "p-2 border rounded" }),
             React.createElement('input', { name: "bairro", value: formData.bairro, onChange: handleInputChange, placeholder: "Bairro", className: "p-2 border rounded" }),
             React.createElement('input', { name: "cidade", value: formData.cidade, onChange: handleInputChange, placeholder: "Cidade", className: "p-2 border rounded" }),
             React.createElement('input', { name: "estado", value: formData.estado, onChange: handleInputChange, placeholder: "Estado", className: "p-2 border rounded" }),
+
             React.createElement('div', { className: "lg:col-span-4 flex justify-end gap-4" },
                 React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                 React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
@@ -818,12 +826,14 @@ function ThirdPartyManagement({ userId, showToast }) {
             React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
                 React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
                     React.createElement('tr', null,
-                        ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                        // ATUALIZADO: Adicionado 'E-mail' ao cabeçalho
+                        ["Apelido", "Razão Social", "Nome Completo", "Cód. SAP", "CNPJ", "CPF", "E-mail", "Endereço", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
                     )
                 ),
                 React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
-                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
+                    // ATUALIZADO: colSpan aumentado para 9
+                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Carregando...")) :
+                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 9, className: "p-4 text-center" }, "Nenhum terceiro encontrado.")) :
                     filteredList.map(t =>
                         React.createElement('tr', { key: t.id, className: "hover:bg-blue-50 even:bg-slate-50" },
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, t.apelido)),
@@ -832,6 +842,8 @@ function ThirdPartyManagement({ userId, showToast }) {
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.codSAP),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(t.cnpj)),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(t.cpf)),
+                            // NOVO: Célula para exibir o E-mail
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, t.email),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `${t.rua || ''}, ${t.bairro || ''} - ${t.cidade || ''}/${t.estado || ''}`),
                             React.createElement('td', { className: "px-6 py-4 text-center" },
                                 React.createElement('div', { className: "flex justify-center gap-x-4" },
@@ -847,6 +859,7 @@ function ThirdPartyManagement({ userId, showToast }) {
         showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente excluir o terceiro "${terceiroToDelete?.apelido}"?`, onConfirm: handleDelete, onCancel: () => setShowConfirmModal(false) })
     );
 }
+
 
 /* FIM DO CÓDIGO PARA REINSERIR */
 function UserManagement({ userId, showToast }) {
@@ -3391,6 +3404,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
