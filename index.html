@@ -3137,54 +3137,64 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         )
     );
 }
-            function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
-              const ALL_PAGES = {
-                    dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
-                    outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
-                    branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
-                    concessionManagement: { title: 'Concessão', icon: 'FileText' },
-                    contractManagement: { title: 'Contrato/Distrato', icon: 'FileText' },
-                    displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
-                    additionalCities: { title: 'Adic. Cidades', icon: 'Building' },
-                    fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
-                    branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
-                    equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
-                    userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
-                    thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'Users', adminOnly: true },
-              };
+            /* INÍCIO DO CÓDIGO CORRIGIDO PARA QuickAccessMenu */
 
-              const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
-              const hoverColors = ['hover:bg-gray-900', 'hover:bg-yellow-600', 'hover:bg-gray-900'];
-              const iconColors = ['text-gray-300', 'text-yellow-100', 'text-gray-300'];
+function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
+    const ALL_PAGES = {
+        dashboard: { title: 'Dashboard', icon: 'LayoutDashboard' },
+        turnoverDashboard: { title: 'Turnover Terceiros', icon: 'Users' },
+        outsourcingDistribution: { title: 'Distribuição', icon: 'MapPin' },
+        thirdPartyByRegion: { title: 'Terceiros por Região', icon: 'Building' },
+        plateHistory: { title: 'Consulta Placas', icon: 'Search' },
+        expenseQuery: { title: 'Consulta Despesas', icon: 'DollarSign' },
+        branchTransfer: { title: 'Troca de Filial', icon: 'ArrowLeftRight' },
+        displacementReleases: { title: 'Lanç. Deslocamento', icon: 'CalendarDays' },
+        displacementApprovals: { title: 'Aprovação', icon: 'UserCheck' },
+        fixedPrices: { title: 'Preço Fixo', icon: 'DollarSign' },
+        displacements: { title: 'Deslocamentos', icon: 'ArrowLeftRight' },
+        additionalCities: { title: 'Adic. Cidades', icon: 'MapPin' },
+        branchManagement: { title: 'Cadastro de Filiais', icon: 'Building', adminOnly: true },
+        equipmentManagement: { title: 'Cadastro de Equipamentos', icon: 'Truck', adminOnly: true },
+        userManagement: { title: 'Cadastro de Usuários', icon: 'Users', adminOnly: true },
+        thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
+        concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
+        contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
+    };
+    const colors = ['bg-gray-800', 'bg-yellow-500', 'bg-gray-800'];
+    const hoverColors = ['hover:bg-gray-900', 'hover:bg-yellow-600', 'hover:bg-gray-900'];
+    const iconColors = ['text-gray-300', 'text-yellow-100', 'text-gray-300'];
+    
+    return (
+        React.createElement('div', { className: "flex flex-col items-center justify-center bg-white p-6 rounded-xl shadow-lg text-center" },
+            React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-8" }, "Bem-vindo ao TERSYS!"),
+            React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl" },
+                (quickLinks || []).map((linkKey, index) => {
+                    const page = ALL_PAGES[linkKey];
+                    if (!page) return null;
+                    const colorIndex = index % colors.length;
+                    return React.createElement('button', {
+                        key: linkKey,
+                        onClick: () => setCurrentPage(linkKey),
+                        className: `p-6 ${colors[colorIndex]} text-white rounded-xl shadow-md ${hoverColors[colorIndex]} transition flex flex-col items-center justify-center`
+                    },
+                        // ATUALIZADO: Adicionada a classe 'flex-shrink-0' para evitar distorção
+                        React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 flex-shrink-0 ${iconColors[colorIndex]}` }),
+                        React.createElement('span', { className: "text-xl font-semibold" }, page.title)
+                    )
+                })
+            ),
+            React.createElement('button', {
+                onClick: onEdit,
+                className: "mt-8 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            },
+                React.createElement(LucideIcon, { name: 'Edit', className: 'mr-2' }),
+                "Editar Atalhos"
+            )
+        )
+    );
+}
 
-              return (
-                React.createElement('div', { className: "flex flex-col items-center justify-center bg-white p-6 rounded-xl shadow-lg text-center" },
-                  React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-8" }, "Bem-vindo ao TERSYS!"),
-                  React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl" },
-                    (quickLinks || []).map((linkKey, index) => {
-                        const page = ALL_PAGES[linkKey];
-                        if (!page) return null;
-                        const colorIndex = index % colors.length;
-                        return React.createElement('button', { 
-                            key: linkKey,
-                            onClick: () => setCurrentPage(linkKey), 
-                            className: `p-6 ${colors[colorIndex]} text-white rounded-xl shadow-md ${hoverColors[colorIndex]} transition flex flex-col items-center justify-center` 
-                        },
-                          React.createElement(LucideIcon, { name: page.icon, className: `h-12 w-12 mx-auto mb-3 ${iconColors[colorIndex]}` }),
-                          React.createElement('span', { className: "text-xl font-semibold" }, page.title)
-                        )
-                    })
-                  ),
-                   React.createElement('button', {
-                        onClick: onEdit,
-                        className: "mt-8 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    }, 
-                    React.createElement(LucideIcon, {name: 'Edit', className: 'mr-2'}),
-                    "Editar Atalhos"
-                   )
-                )
-              );
-            }
+/* FIM DO CÓDIGO CORRIGIDO */
             
             // Componente Principal da Aplicação
             function App() {
@@ -3389,6 +3399,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
