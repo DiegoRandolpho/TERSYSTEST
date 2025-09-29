@@ -3195,17 +3195,19 @@ function ExpenseQuery({ userId, userRole, showToast }) {
                             ),
                             React.createElement('nav', { className: "flex-grow" },
     React.createElement('ul', { className: "space-y-2" },
-        React.createElement(MenuCategory, { title: "Dashboard", icon: "LayoutDashboard", menuKey: "dashboard" },
-            React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
-            React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover Terceiros' }),
-            React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' })
+        // RENOMEADO E ATUALIZADO: A antiga categoria "Dashboard" agora é "Relatórios"
+        React.createElement(MenuCategory, { title: "Relatórios", icon: "FileText", menuKey: "relatorios" },
+            React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Relatório de Equipamentos' }),
+            React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Relatório de Turnover' }),
+            React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' }),
+            // MOVIDO: Itens que estavam em "Operacional" agora estão aqui
+            React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
+            React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Consulta Despesas' })
         ),
+        // ATUALIZADO: Itens removidos daqui
         React.createElement(MenuCategory, { title: "Operacional", icon: "Settings", menuKey: "operacional" },
             React.createElement(MenuItem, { page: 'branchTransfer', icon: 'ArrowLeftRight', text: 'Troca de Filial' }),
-            // ÍCONE ATUALIZADO
-            React.createElement(MenuItem, { page: 'displacementReleases', icon: 'CalendarDays', text: 'Lanç. Deslocamento' }),
-            React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
-            React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Despesa' })
+            React.createElement(MenuItem, { page: 'displacementReleases', icon: 'CalendarDays', text: 'Lanç. Deslocamento' })
         ),
         React.createElement(MenuCategory, { title: "Aprovação", icon: "UserCheck", menuKey: "approval" },
             React.createElement(MenuItem, { page: 'displacementApprovals', icon: 'FileText', text: 'Aprovação' })
@@ -3213,17 +3215,14 @@ function ExpenseQuery({ userId, userRole, showToast }) {
         React.createElement(MenuCategory, { title: "Precificação", icon: "DollarSign", menuKey: "pricing" },
             React.createElement(MenuItem, { page: 'fixedPrices', icon: 'DollarSign', text: 'Preço Fixo' }),
             React.createElement(MenuItem, { page: 'displacements', icon: 'ArrowLeftRight', text: 'Deslocamentos' }),
-            // ÍCONE ATUALIZADO
             React.createElement(MenuItem, { page: 'additionalCities', icon: 'MapPin', text: 'Adic. Cidades' })
         ),
         userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
             React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
             React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
             React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
-            // ÍCONE ATUALIZADO
             React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'User', text: 'Terceiros' }),
             React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
-            // ÍCONE ATUALIZADO
             React.createElement(MenuItem, { page: 'contractManagement', icon: 'Edit', text: 'Contrato/Distrato' })
         )
     )
@@ -3263,6 +3262,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
