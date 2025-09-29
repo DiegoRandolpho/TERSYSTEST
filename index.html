@@ -3197,9 +3197,9 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     React.createElement('ul', { className: "space-y-2" },
         // RENOMEADO E ATUALIZADO: A antiga categoria "Dashboard" agora é "Relatórios"
         React.createElement(MenuCategory, { title: "Relatórios", icon: "FileText", menuKey: "relatorios" },
-            React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Relatório de Equipamentos' }),
-            React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Relatório de Turnover' }),
-            React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distribuição' }),
+            React.createElement(MenuItem, { page: 'dashboard', icon: 'Truck', text: 'Equipamentos' }),
+            React.createElement(MenuItem, { page: 'turnoverDashboard', icon: 'Users', text: 'Turnover' }),
+            React.createElement(MenuItem, { page: 'outsourcingDistribution', icon: 'MapPin', text: 'Distr. Região' }),
             // MOVIDO: Itens que estavam em "Operacional" agora estão aqui
             React.createElement(MenuItem, { page: 'plateHistory', icon: 'Search', text: 'Consulta Placas' }),
             React.createElement(MenuItem, { page: 'expenseQuery', icon: 'DollarSign', text: 'Consulta Despesas' })
@@ -3262,6 +3262,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
