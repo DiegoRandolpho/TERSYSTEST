@@ -763,8 +763,7 @@ function UserManagement({ userId, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
-           /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
+/* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
 
 function ConcessionManagement({ userId, userRole, showToast }) {
     const [concessions, setConcessions] = React.useState([]);
@@ -950,11 +949,26 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
                             React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
+                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
+                            userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
+                                c.data_fim ? getConcessionStatusBadge(true) :
+                                React.createElement('div', { className: 'flex justify-center gap-x-4'},
+                                    React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                    React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ),
+        showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
+    );
+}
 
-            // COMPONENTE ATUALIZADO: ContractManagement
-            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ContractManagement */
-
+/* FIM DO CÓDIGO CORRIGIDO */
 function ContractManagement({ userId, userRole, showToast }) {
     const [category, setCategory] = React.useState('Contratação');
     const initialFormState = { data_alteracao: '', codSAP: '', placa: '', placa_antiga: '', valorfixo: '', atraso: '' };
@@ -2942,6 +2956,7 @@ function ExpenseQuery({ userId, userRole, showToast }) {
     </script>
 </body>
 </html>
+
 
 
 
