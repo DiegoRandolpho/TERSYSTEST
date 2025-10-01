@@ -3600,6 +3600,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
                         case 'displacements': return React.createElement(Displacements, { userId, userRole, showToast });
                         case 'branchManagement': return userRole === 'administrador' ? React.createElement(BranchManagement, { userId, userRole, showToast }) : null;
                         case 'equipmentManagement': return userRole === 'administrador' ? React.createElement(EquipmentManagement, { userId, showToast }) : null;
+                        case 'implementManagement': return userRole === 'administrador' ? React.createElement(ImplementManagement, { userId, showToast }) : null;
                         case 'userManagement': return userRole === 'administrador' ? React.createElement(UserManagement, { userId, showToast }) : null;
                         case 'thirdPartyManagement': return userRole === 'administrador' ? React.createElement(ThirdPartyManagement, { userId, showToast }) : null;
                         case 'quickAccessMenu':
@@ -3686,6 +3687,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
