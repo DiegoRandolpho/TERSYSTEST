@@ -1161,14 +1161,8 @@ function UserManagement({ userId, showToast }) {
 
 /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO ConcessionManagement */
 
-/* INÍCIO DA FUNÇÃO CORRIGIDA E ATUALIZADA */
-
-/* INÍCIO DA FUNÇÃO FINAL COM AUTOCOMPLETAR FUNCIONAL */
-
-/* INÍCIO DA FUNÇÃO FINAL E CORRIGIDA */
-
 function ConcessionManagement({ userId, userRole, showToast }) {
-                // Estados do componente
+                // ... (todos os estados permanecem os mesmos) ...
                 const [concessions, setConcessions] = React.useState([]);
                 const [isLoading, setIsLoading] = React.useState(false);
                 const [showForm, setShowForm] = React.useState(false);
@@ -1185,13 +1179,28 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                 const [searchTerm, setSearchTerm] = React.useState('');
                 const [showConfirmModal, setShowConfirmModal] = React.useState(false);
                 const [concessionToEnd, setConcessionToEnd] = React.useState(null);
-
-                // --- INÍCIO DAS ALTERAÇÕES ---
-
-                // ADICIONADO: Estado para armazenar os tipos de implemento com suas cores
                 const [tiposImplemento, setTiposImplemento] = React.useState([]);
 
-                // ADICIONADO: Função auxiliar para verificar a luminosidade da cor
+                // --- INÍCIO DA ALTERAÇÃO ---
+
+                // ALTERADO: A função handleInputChange agora valida campos de data
+                const handleInputChange = (e) => {
+                    let { name, value, type } = e.target;
+                    
+                    // Se o campo for do tipo 'date', aplicamos a validação no ano
+                    if (type === 'date') {
+                        const parts = value.split('-');
+                        if (parts[0] && parts[0].length > 4) {
+                            parts[0] = parts[0].slice(0, 4); // Corta o ano para 4 dígitos
+                            value = parts.join('-');
+                        }
+                    }
+
+                    setFormData(prev => ({ ...prev, [name]: value }));
+                };
+
+                // --- FIM DA ALTERAÇÃO ---
+
                 const isColorLight = (hexColor) => {
                     if (!hexColor) return false;
                     const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
@@ -1201,28 +1210,13 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
                 };
 
-                // ALTERADO: Nova função que retorna um objeto de estilo inline
                 const getTypeBadgeStyle = (typeDescricao) => {
                     const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
-                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cor padrão
+                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6';
                     const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
                     return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
                 };
                 
-                // REMOVIDO: A função antiga de classes foi substituída pela de cima
-                /*
-                const getTypeBadgeClasses = (type) => {
-                    switch (type) {
-                        case 'BOMBA': return 'bg-blue-100 text-blue-800';
-                        case 'BETONEIRA': return 'bg-green-100 text-green-800';
-                        case 'BOMBA LANÇA': return 'bg-yellow-100 text-yellow-800';
-                        default: return 'bg-gray-100 text-gray-800';
-                    }
-                };
-                */
-
-                // --- FIM DAS ALTERAÇÕES ---
-
                 const getConcessionStatusBadge = (isFinished) => {
                     const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
                     if (isFinished) {
@@ -1234,22 +1228,19 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                 const fetchAllData = React.useCallback(async () => {
                     setIsLoading(true);
                     try {
-                        // ALTERADO: Adicionada a busca pela tabela 'tipos_implemento'
                         const [concessaoRes, terceirosRes, equipamentosRes, tiposImplementoRes] = await Promise.all([
                             supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
                             supabase.from('terceiros').select('codSAP, apelido, cnpj, nome_completo, cpf'),
                             supabase.from('equipamentos').select('plate, type'),
-                            supabase.from('tipos_implemento').select('descricao, cor') // <-- Nova busca
+                            supabase.from('tipos_implemento').select('descricao, cor')
                         ]);
 
                         if (concessaoRes.error) throw concessaoRes.error;
                         if (terceirosRes.error) throw terceirosRes.error;
                         if (equipamentosRes.error) throw equipamentosRes.error;
-                        if (tiposImplementoRes.error) throw tiposImplementoRes.error; // <-- Verificação de erro
+                        if (tiposImplementoRes.error) throw tiposImplementoRes.error;
 
-                        // ADICIONADO: Armazena os tipos de implemento no estado
                         setTiposImplemento(tiposImplementoRes.data || []);
-                        
                         const platesData = equipamentosRes.data.map(e => e.plate) || [];
                         const terceirosData = terceirosRes.data || [];
                         
@@ -1273,15 +1264,14 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     setIsLoading(false);
                 }, [showToast]);
 
-                // O restante da função (useEffect, handlers, etc.) permanece o mesmo...
-
                 const formatDate = (dateString) => {
                     if (!dateString) return '—';
                     const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
                     return date.toLocaleDateString('pt-BR');
                 };
                 React.useEffect(() => { fetchAllData(); }, [fetchAllData]);
-                const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+                
+                // As outras funções (handlePlacaChange, handleFormSubmit, etc.) permanecem as mesmas
                 const handlePlacaChange = (e) => {
                     const value = e.target.value.toUpperCase();
                     setPlacaSearch(value);
@@ -1397,8 +1387,7 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     const search = searchTerm.toLowerCase();
                     return Object.values(c).some(val => val && String(val).toLowerCase().includes(search));
                 });
-
-                // O return (JSX) é onde a alteração final é aplicada
+                
                 return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
                     React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
                     userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
@@ -1409,28 +1398,19 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                     ),
                     showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                         React.createElement('div', null,
-                            React.createElement('input', {
-                                name: "placa", value: placaSearch, onChange: handlePlacaChange,
-                                className: "w-full p-2 border rounded", placeholder: "Digite para pesquisar a placa...",
-                                list: "lista-de-placas", required: true, autoComplete: "off"
-                            }),
-                            React.createElement('datalist', { id: "lista-de-placas" },
-                                filteredPlates.map(p => React.createElement('option', { key: p, value: p }))
-                            )
+                            React.createElement('input', { name: "placa", value: placaSearch, onChange: handlePlacaChange, className: "w-full p-2 border rounded", placeholder: "Digite para pesquisar a placa...", list: "lista-de-placas", required: true, autoComplete: "off" }),
+                            React.createElement('datalist', { id: "lista-de-placas" }, filteredPlates.map(p => React.createElement('option', { key: p, value: p })))
                         ),
                         React.createElement('div', null,
-                            React.createElement('input', {
-                                name: "terceiro", value: terceiroSearch, onChange: handleTerceiroChange,
-                                className: "w-full p-2 border rounded", placeholder: "Pesquise o apelido do terceiro...",
-                                list: "lista-de-terceiros", required: true, autoComplete: "off"
-                            }),
-                            React.createElement('datalist', { id: "lista-de-terceiros" },
-                                filteredTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: `${t.apelido} (${t.codSAP})` }))
-                            )
+                            React.createElement('input', { name: "terceiro", value: terceiroSearch, onChange: handleTerceiroChange, className: "w-full p-2 border rounded", placeholder: "Pesquise o apelido do terceiro...", list: "lista-de-terceiros", required: true, autoComplete: "off" }),
+                            React.createElement('datalist', { id: "lista-de-terceiros" }, filteredTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: `${t.apelido} (${t.codSAP})` })))
                         ),
                         React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true }),
-                        React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
-                        React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded" }),
+                        
+                        // ALTERADO: Adicionado atributo 'max' para limitar o ano
+                        React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true, max: "9999-12-31" }),
+                        React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded", max: "9999-12-31" }),
+                        
                         React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
                             React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
                             React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
@@ -1446,47 +1426,35 @@ function ConcessionManagement({ userId, userRole, showToast }) {
                                 )
                             ),
                             React.createElement('tbody', null,
-                                isLoading ?
-                                    React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando...")) :
-                                !isLoading && filteredList.length === 0 ?
-                                    React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
-                                    filteredList.map(c =>
-                                        React.createElement('tr', { key: c.id, className: "hover:bg-blue-50 even:bg-slate-50" },
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.codSAP),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.apelido),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: 'font-medium text-slate-800' }, c.placa)),
-                                            
-                                            // ALTERADO: A badge agora usa o estilo inline dinâmico
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
-                                                React.createElement('span', { 
-                                                    style: getTypeBadgeStyle(c.tipoImplemento),
-                                                    className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
-                                                }, c.tipoImplemento)
-                                            ),
-
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
-                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
-                                            userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
-                                                c.data_fim ?
-                                                    getConcessionStatusBadge(true) :
-                                                    React.createElement('div', { className: 'flex justify-center gap-x-4' },
-                                                        React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
-                                                        React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
-                                                    )
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando..."))
+                                : !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada."))
+                                : filteredList.map(c =>
+                                    React.createElement('tr', { key: c.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.codSAP),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.apelido),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: 'font-medium text-slate-800' }, c.placa)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { style: getTypeBadgeStyle(c.tipoImplemento), className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium` }, c.tipoImplemento)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
+                                        userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
+                                            c.data_fim ? getConcessionStatusBadge(true)
+                                            : React.createElement('div', { className: 'flex justify-center gap-x-4' },
+                                                React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                                React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
                                             )
                                         )
                                     )
+                                )
                             )
                         )
                     ),
                     showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
                 );
             }
-/* INÍCIO DO CÓDIGO PARA REINSERIR O WhatsAppButton */
 
 function WhatsAppButton({ phoneNumber, message }) {
     const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
@@ -3712,6 +3680,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
