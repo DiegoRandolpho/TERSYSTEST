@@ -457,8 +457,175 @@ function BranchManagement({ userId, userRole, showToast }) {
     );
 }
 
-/* FIM DO CÓDIGO CORRIGIDO */
+            function ImplementManagement({ userId, showToast }) {
+                // Estados para controlar a lista, o formulário e o carregamento
+                const [implementos, setImplementos] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [showForm, setShowForm] = React.useState(false);
+                const [isEditing, setIsEditing] = React.useState(false);
+                const initialFormState = { id: null, descricao: '', cor: '#cccccc' };
+                const [formData, setFormData] = React.useState(initialFormState);
+                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+                const [itemToToggle, setItemToToggle] = React.useState(null);
 
+                // Função para buscar os dados do Supabase
+                const fetchImplementos = React.useCallback(async () => {
+                    setIsLoading(true);
+                    try {
+                        // Busca todos, incluindo inativos, para o admin poder reativar
+                        const { data, error } = await supabase.from('tipos_implemento').select('*').order('descricao');
+                        if (error) throw error;
+                        setImplementos(data || []);
+                    } catch (err) {
+                        showToast("Erro ao carregar tipos de implemento.", "error");
+                    }
+                    setIsLoading(false);
+                }, [showToast]);
+
+                // Efeito que busca os dados quando a página carrega
+                React.useEffect(() => {
+                    fetchImplementos();
+                }, [fetchImplementos]);
+
+                // Manipuladores de eventos do formulário
+                const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+                
+                const handleFormSubmit = async (e) => {
+                    e.preventDefault();
+                    if (!formData.descricao.trim()) {
+                        showToast("O campo descrição é obrigatório.", "error");
+                        return;
+                    }
+                    setIsLoading(true);
+                    try {
+                        const record = { descricao: formData.descricao.trim(), cor: formData.cor };
+                        if (isEditing) {
+                            // MODO EDIÇÃO: Atualiza um registro existente
+                            const { error } = await supabase.from('tipos_implemento').update(record).eq('id', formData.id);
+                            if (error) throw error;
+                            showToast("Implemento atualizado com sucesso!", "success");
+                        } else {
+                            // MODO CRIAÇÃO: Insere um novo registro
+                            const { error } = await supabase.from('tipos_implemento').insert([record]);
+                            if (error) throw error;
+                            showToast("Implemento cadastrado com sucesso!", "success");
+                        }
+                        // Limpa e esconde o formulário e recarrega a lista
+                        setShowForm(false);
+                        setIsEditing(false);
+                        setFormData(initialFormState);
+                        fetchImplementos();
+                    } catch (err) {
+                        showToast(`Erro ao salvar: ${err.message}`, "error");
+                    }
+                    setIsLoading(false);
+                };
+                
+                // Funções para controlar o formulário de edição
+                const handleEditClick = (implemento) => {
+                    setFormData({ id: implemento.id, descricao: implemento.descricao, cor: implemento.cor || '#cccccc' });
+                    setIsEditing(true);
+                    setShowForm(true);
+                };
+
+                const handleCancel = () => {
+                    setShowForm(false);
+                    setIsEditing(false);
+                    setFormData(initialFormState);
+                };
+
+                // Funções para Ativar / Desativar um item
+                const confirmToggleActive = (item) => {
+                    setItemToToggle(item);
+                    setShowConfirmModal(true);
+                };
+
+                const handleToggleActive = async () => {
+                    if (!itemToToggle) return;
+                    setIsLoading(true);
+                    try {
+                        const newStatus = !itemToToggle.ativo;
+                        const { error } = await supabase.from('tipos_implemento').update({ ativo: newStatus }).eq('id', itemToToggle.id);
+                        if (error) throw error;
+                        showToast(`Implemento ${newStatus ? 'reativado' : 'desativado'} com sucesso!`, 'success');
+                        fetchImplementos(); // Recarrega a lista para mostrar o novo status
+                    } catch (err) {
+                        showToast("Erro ao alterar o status.", "error");
+                    }
+                    setIsLoading(false);
+                    setShowConfirmModal(false);
+                    setItemToToggle(null);
+                };
+
+
+                // Renderização do componente (JSX)
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Cadastro de Tipos de Implemento"),
+                    
+                    // Botão para abrir o formulário
+                    !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+                        React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
+                            React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }), "Adicionar Novo Tipo"
+                        )
+                    ),
+
+                    // Formulário de Criação/Edição
+                    showForm && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('input', { name: "descricao", value: formData.descricao, onChange: handleInputChange, placeholder: "Descrição do Implemento", className: "p-2 border rounded md:col-span-2" }),
+                        React.createElement('div', { className: "flex items-center gap-2" },
+                            React.createElement('label', { htmlFor: 'cor' }, "Cor:"),
+                            React.createElement('input', { type: "color", id: "cor", name: "cor", value: formData.cor, onChange: handleInputChange, className: "h-10 w-10 p-1 border rounded cursor-pointer" })
+                        ),
+                        React.createElement('div', { className: "md:col-span-3 flex justify-end gap-4" },
+                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+                        )
+                    ),
+                    
+                    // Tabela de listagem dos implementos
+                    React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                        React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                            React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                                React.createElement('tr', null,
+                                    ["Descrição", "Cor", "Status", "Ações"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                                )
+                            ),
+                            React.createElement('tbody', null,
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 4, className: "p-4 text-center" }, "Carregando..."))
+                                : implementos.map(item =>
+                                    React.createElement('tr', { key: item.id, className: `hover:bg-blue-50 even:bg-slate-50 ${!item.ativo ? 'opacity-50' : ''}` },
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: "font-medium text-slate-800" }, item.descricao)),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 flex items-center gap-2" },
+                                            React.createElement('div', { style: { backgroundColor: item.cor }, className: "h-5 w-5 rounded border" }),
+                                            item.cor
+                                        ),
+                                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" },
+                                            React.createElement('span', { className: `inline-flex items-center py-1 px-3 rounded-full text-xs font-medium ${item.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}` },
+                                                item.ativo ? "Ativo" : "Inativo"
+                                            )
+                                        ),
+                                        React.createElement('td', { className: "px-6 py-4 text-center" },
+                                            React.createElement('div', { className: "flex justify-center gap-x-4" },
+                                                React.createElement('button', { onClick: () => handleEditClick(item), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                                React.createElement('button', { onClick: () => confirmToggleActive(item), className: `text-gray-400 ${item.ativo ? 'hover:text-red-600' : 'hover:text-green-600'} transition-colors`, title: item.ativo ? "Desativar" : "Reativar" },
+                                                    React.createElement(LucideIcon, { name: item.ativo ? 'Ban' : 'Save', className: 'h-5 w-5' })
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    
+                    // Modal de Confirmação
+                    showConfirmModal && React.createElement(ConfirmationModal, { 
+                        message: `Deseja realmente ${itemToToggle?.ativo ? 'DESATIVAR' : 'REATIVAR'} o implemento "${itemToToggle?.descricao}"?`,
+                        onConfirm: handleToggleActive,
+                        onCancel: () => setShowConfirmModal(false)
+                    })
+                );
+            }
            function EquipmentManagement({ userId, showToast }) {
               // Estados do formulário e da página
               const [newPlate, setNewPlate] = React.useState('');
@@ -3517,6 +3684,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
