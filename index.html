@@ -460,46 +460,73 @@ function BranchManagement({ userId, userRole, showToast }) {
 /* FIM DO CÓDIGO CORRIGIDO */
 
             function EquipmentManagement({ userId, showToast }) {
+              // ESTADOS DO FORMULÁRIO DE CRIAÇÃO
               const [newPlate, setNewPlate] = React.useState('');
               const [newModel, setNewModel] = React.useState('');
               const [newBrand, setNewBrand] = React.useState('');
               const [newChassis, setNewChassis] = React.useState('');
               const [newEquipmentType, setNewEquipmentType] = React.useState('');
+              
+              // ESTADOS DE CONTROLE DA PÁGINA
               const [equipmentList, setEquipmentList] = React.useState([]);
-              const [error, setError] = React.useState(null);
+              const [tiposImplemento, setTiposImplemento] = React.useState([]); // ADICIONADO: Estado para a lista dinâmica de tipos
               const [isLoading, setIsLoading] = React.useState(false);
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
               const [editingEquipment, setEditingEquipment] = React.useState(null);
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
-              const getTypeBadgeClasses = (type) => {
-                switch (type) {
-                case 'BOMBA':
-                    return 'bg-blue-100 text-blue-800';
-                case 'BETONEIRA':
-                    return 'bg-green-100 text-green-800';
-                case 'BOMBA LANÇA':
-                    return 'bg-yellow-100 text-yellow-800';
-                default:
-                    return 'bg-gray-100 text-gray-800';
-                }
-            };
-              const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
 
+              // REMOVIDO: A lista de tipos de implemento estática foi removida.
+              // const equipmentTypes = ["BOMBA LANÇA", "BOMBA", "BETONEIRA"];
+
+              // ADICIONADO: Função auxiliar para determinar se uma cor hexadecimal é clara ou escura
+              const isColorLight = (hexColor) => {
+                  if (!hexColor) return false;
+                  const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                  const r = parseInt(color.substring(0, 2), 16); // Red
+                  const g = parseInt(color.substring(2, 4), 16); // Green
+                  const b = parseInt(color.substring(4, 6), 16); // Blue
+                  // Fórmula para calcular a luminosidade (YIQ)
+                  return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
+              };
+
+              // ALTERADO: A função de badge agora usa o campo 'cor' do banco de dados e retorna um objeto de estilo
+              const getTypeBadgeStyle = (typeDescricao) => {
+                  const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
+                  const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cinza padrão
+                  const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff'; // Preto ou branco
+                  
+                  return {
+                      backgroundColor: bgColor,
+                      color: textColor,
+                      border: `1px solid ${bgColor}`
+                  };
+              };
+
+              // ALTERADO: useEffect agora busca tanto os equipamentos quanto os tipos de implemento
               React.useEffect(() => {
-                const fetchEquipment = async () => {
+                const fetchInitialData = async () => {
                   setIsLoading(true);
                   try {
-                    const { data, error: fetchError } = await supabase.from('equipamentos').select('*').order('created_at', { ascending: false });
-                    if (fetchError) throw fetchError;
-                    setEquipmentList(data);
+                    // Executa as duas buscas em paralelo para mais eficiência
+                    const [equipmentRes, tiposRes] = await Promise.all([
+                        supabase.from('equipamentos').select('*').order('created_at', { ascending: false }),
+                        supabase.from('tipos_implemento').select('id, descricao, cor').eq('ativo', true).order('descricao')
+                    ]);
+      
+                    if (equipmentRes.error) throw equipmentRes.error;
+                    if (tiposRes.error) throw tiposRes.error;
+
+                    setEquipmentList(equipmentRes.data);
+                    setTiposImplemento(tiposRes.data);
+
                   } catch (err) {
-                    showToast("Erro ao carregar equipamentos.", "error");
+                    showToast("Erro ao carregar dados iniciais da página.", "error");
                   }
                   setIsLoading(false);
                 };
-                fetchEquipment();
+                fetchInitialData();
               }, [showToast]);
 
               const handleAddEquipment = async (e) => {
@@ -510,6 +537,7 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(true);
                 try {
+                  // O campo 'type' agora salva a string 'descricao' selecionada
                   await supabase.from('equipamentos').insert([{ plate: newPlate.trim(), model: newModel.trim(), brand: newBrand.trim(), chassis: newChassis.trim(), type: newEquipmentType, created_by_username: userId }]);
                   showToast("Equipamento adicionado com sucesso!", "success");
                   setNewPlate(''); setNewModel(''); setNewBrand(''); setNewChassis(''); setNewEquipmentType(''); setShowForm(false);
@@ -557,7 +585,7 @@ function BranchManagement({ userId, userRole, showToast }) {
                 setShowConfirmModal(false);
                 setEquipmentToDelete(null);
               };
-
+              
               const filteredEquipmentList = equipmentList.filter(eq =>
                   Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
@@ -570,89 +598,87 @@ function BranchManagement({ userId, userRole, showToast }) {
                     React.createElement('input', { placeholder: "Modelo", value: newModel, onChange: e => setNewModel(e.target.value), className: "p-2 border rounded" }),
                     React.createElement('input', { placeholder: "Marca", value: newBrand, onChange: e => setNewBrand(e.target.value), className: "p-2 border rounded" }),
                     React.createElement('input', { placeholder: "Chassi", value: newChassis, onChange: e => setNewChassis(e.target.value), className: "p-2 border rounded" }),
-                    React.createElement('select', { value: newEquipmentType, onChange: e => setNewEquipmentType(e.target.value), className: "p-2 border rounded" },
+                    
+                    // ALTERADO: O select agora é populado dinamicamente pelo estado 'tiposImplemento'
+                    React.createElement('select', { value: newEquipmentType, onChange: e => setNewEquipmentType(e.target.value), className: "p-2 border rounded", required: true },
                         React.createElement('option', { value: "" }, "Selecione o Tipo"),
-                        equipmentTypes.map(type => React.createElement('option', { key: type, value: type }, type))
+                        tiposImplemento.map(tipo => React.createElement('option', { key: tipo.id, value: tipo.descricao }, tipo.descricao))
                     ),
+                    
                     React.createElement('div', { className: "lg:col-span-3 flex justify-center gap-4" },
-                        React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, "Adicionar"),
+                         React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded" }, "Adicionar"),
                         React.createElement('button', { type: "button", onClick: () => setShowForm(false), className: "p-2 bg-gray-300 rounded" }, "Cancelar")
                     )
                 ),
-                /* INÍCIO DO CÓDIGO PARA SUBSTITUIR */
-
-React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
-    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
-        React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
-            React.createElement('tr', null, 
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Placa"), 
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Modelo"),
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Marca"),
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Chassi"),
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Tipo"), 
-                React.createElement('th', {className: "px-6 py-4 font-semibold text-right border-b-2 border-gray-200"}, "Ações")
-            )
-        ),
-        React.createElement('tbody', { className: "divide-y divide-gray-100" },
-            // Se não houver equipamentos, mostra uma mensagem
-            isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center" }, "Carregando...")) :
-            filteredEquipmentList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center text-gray-500" }, "Nenhum equipamento encontrado.")) :
-            
-            // Mapeia os equipamentos para as linhas da tabela
-            filteredEquipmentList.map(eq => (
-                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50 transition-colors" },
-                    
-                    // Lógica para modo de edição (se houver, manter simples)
-                    editingEquipment && editingEquipment.id === eq.id ?
-                    React.createElement(React.Fragment, null,
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
-                        React.createElement('td', { className: "p-2" }, React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, equipmentTypes.map(t=>React.createElement('option',{key:t, value:t}, t)))),
-                        React.createElement('td', { className: "p-2 text-right" },
-                            React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
-                            React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
-                        )
-                    ) :
-
-                    // Células de Visualização com o novo estilo
-                    React.createElement(React.Fragment, null,
-                        // Destaque na coluna Placa
-                        React.createElement('td', { className: "px-6 py-4" }, React.createElement('span', { className: "font-medium text-gray-800" }, eq.plate)),
-                        React.createElement('td', { className: "px-6 py-4" }, eq.model),
-                        React.createElement('td', { className: "px-6 py-4" }, eq.brand),
-                        React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
-                        // Tag colorida para o Tipo
-                        React.createElement('td', { className: "px-6 py-4" },
-                            React.createElement('span', {
-                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(eq.type)}`
-                            }, eq.type)
-                        ),
-                        // Ícones de ação aprimorados
-                        React.createElement('td', { className: "px-6 py-4" },
-                            React.createElement('div', { className: "flex justify-end gap-x-4" },
-                                React.createElement('button', { onClick: () => handleEditClick(eq), className: "text-gray-400 hover:text-blue-600 transition-colors" }, 
-                                    React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })
-                                ),
-                                React.createElement('button', { onClick: () => confirmDeleteEquipment(eq), className: "text-gray-400 hover:text-red-600 transition-colors" },
-                                    React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' })
-                                )
+        
+                React.createElement('div', { className: "rounded-lg border border-gray-200 shadow-sm overflow-hidden" },
+                    React.createElement('table', { className: "w-full text-sm text-left text-gray-600" },
+                        React.createElement('thead', { className: "text-xs text-gray-500 uppercase bg-white" }, 
+                            React.createElement('tr', null, 
+                                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Placa"), 
+                                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Modelo"),
+                                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Marca"),
+                                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Chassi"),
+                                React.createElement('th', {className: "px-6 py-4 font-semibold text-left border-b-2 border-gray-200"}, "Tipo"), 
+                                React.createElement('th', {className: "px-6 py-4 font-semibold text-right border-b-2 border-gray-200"}, "Ações")
                             )
+                        ),
+                        React.createElement('tbody', { className: "divide-y divide-gray-100" },
+                            isLoading ?
+                                React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center" }, "Carregando...")) :
+                            filteredEquipmentList.length === 0 ?
+                                React.createElement('tr', null, React.createElement('td', { colSpan: "6", className: "p-4 text-center text-gray-500" }, "Nenhum equipamento encontrado.")) :
+                            
+                            filteredEquipmentList.map(eq => (
+                                React.createElement('tr', { key: eq.id, className: "bg-white hover:bg-gray-50 transition-colors" },
+                                    editingEquipment && editingEquipment.id === eq.id ?
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.plate, onChange: e=>handleFieldChange(e, 'plate'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.model, onChange: e=>handleFieldChange(e, 'model'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.brand, onChange: e=>handleFieldChange(e, 'brand'), className:"p-1 border rounded w-full text-sm"})),
+                                        React.createElement('td', { className: "p-2" }, React.createElement('input', {value: editingEquipment.chassis, onChange: e=>handleFieldChange(e, 'chassis'), className:"p-1 border rounded w-full text-sm"})),
+                                        // ALTERADO: O select de edição agora também é populado dinamicamente
+                                        React.createElement('td', { className: "p-2" }, 
+                                            React.createElement('select', {value: editingEquipment.type, onChange: e=>handleFieldChange(e, 'type'), className:"p-1 border rounded w-full text-sm"}, 
+                                                tiposImplemento.map(t=>React.createElement('option',{key:t.id, value:t.descricao}, t.descricao))
+                                            )
+                                        ),
+                                        React.createElement('td', { className: "p-2 text-right" },
+                                            React.createElement('button', {onClick: handleUpdateEquipment, className:"text-green-600 mr-2 p-1 hover:bg-green-100 rounded-full"}, React.createElement(LucideIcon, {name:'Save'})),
+                                            React.createElement('button', {onClick: handleCancelEdit, className:"text-gray-600 p-1 hover:bg-gray-200 rounded-full"}, React.createElement(LucideIcon, {name:'Ban'}))
+                                        )
+                                    ) :
+                                    React.createElement(React.Fragment, null,
+                                        React.createElement('td', { className: "px-6 py-4" }, React.createElement('span', { className: "font-medium text-gray-800" }, eq.plate)),
+                                        React.createElement('td', { className: "px-6 py-4" }, eq.model),
+                                        React.createElement('td', { className: "px-6 py-4" }, eq.brand),
+                                        React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
+                                        // ALTERADO: A badge agora usa o estilo dinâmico vindo da função getTypeBadgeStyle
+                                        React.createElement('td', { className: "px-6 py-4" },
+                                            React.createElement('span', {
+                                                style: getTypeBadgeStyle(eq.type), // Usa estilo inline
+                                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
+                                            }, eq.type)
+                                        ),
+                                        React.createElement('td', { className: "px-6 py-4" },
+                                            React.createElement('div', { className: "flex justify-end gap-x-4" },
+                                                React.createElement('button', { onClick: () => handleEditClick(eq), className: "text-gray-400 hover:text-blue-600 transition-colors" }, 
+                                                    React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })
+                                                ),
+                                                React.createElement('button', { onClick: () => confirmDeleteEquipment(eq), className: "text-gray-400 hover:text-red-600 transition-colors" },
+                                                    React.createElement(LucideIcon, { name: 'Trash2', className: 'h-5 w-5' })
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            ))
                         )
                     )
-                )
-            ))
-        )
-    )
-),
+                ),
                 showConfirmModal && React.createElement(ConfirmationModal, { message: `Excluir equipamento placa "${equipmentToDelete?.plate}"?`, onConfirm: handleDeleteEquipment, onCancel: () => setShowConfirmModal(false) })
               );
             }
-
-            /* INÍCIO DO CÓDIGO CORRIGIDO PARA A FUNÇÃO UserManagement */
-/* INÍCIO DO CÓDIGO PARA REINSERIR A FUNÇÃO ThirdPartyManagement */
-
 function ThirdPartyManagement({ userId, showToast }) {
     const [terceirosList, setTerceirosList] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -3520,3 +3546,4 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
