@@ -459,7 +459,7 @@ function BranchManagement({ userId, userRole, showToast }) {
 
 /* FIM DO CÓDIGO CORRIGIDO */
 
-            function EquipmentManagement({ userId, showToast }) {
+           function EquipmentManagement({ userId, showToast }) {
               // Estados do formulário e da página
               const [newPlate, setNewPlate] = React.useState('');
               const [newModel, setNewModel] = React.useState('');
@@ -467,7 +467,7 @@ function BranchManagement({ userId, userRole, showToast }) {
               const [newChassis, setNewChassis] = React.useState('');
               const [newEquipmentType, setNewEquipmentType] = React.useState('');
               const [equipmentList, setEquipmentList] = React.useState([]);
-              const [tiposImplemento, setTiposImplemento] = React.useState([]); // Mantém o estado para a lista dinâmica
+              const [tiposImplemento, setTiposImplemento] = React.useState([]);
               const [isLoading, setIsLoading] = React.useState(false);
               const [showConfirmModal, setShowConfirmModal] = React.useState(false);
               const [equipmentToDelete, setEquipmentToDelete] = React.useState(null);
@@ -475,26 +475,27 @@ function BranchManagement({ userId, userRole, showToast }) {
               const [searchTerm, setSearchTerm] = React.useState('');
               const [showForm, setShowForm] = React.useState(false);
 
-              // CORRIGIDO: Revertida para a função original que retorna classes CSS, pois não temos a coluna 'cor'
-              const getTypeBadgeClasses = (type) => {
-                // Adicione todos os seus tipos e cores aqui como no código original
-                switch (type) {
-                    case 'BOMBA':
-                        return 'bg-blue-100 text-blue-800';
-                    case 'BETONEIRA':
-                        return 'bg-green-100 text-green-800';
-                    case 'BOMBA LANÇA':
-                    case 'BOMBA LANÇA 30m':
-                    case 'BOMBA LANÇA 20m':
-                        return 'bg-yellow-100 text-yellow-800';
-                    case 'BOMBA INOX':
-                    case 'BOMBA 1406':
-                        return 'bg-indigo-100 text-indigo-800';
-                    case 'BETOBOMBA':
-                         return 'bg-pink-100 text-pink-800';
-                    default:
-                        return 'bg-gray-100 text-gray-800';
-                }
+              // ADICIONADO DE VOLTA: Função para verificar se a cor é clara ou escura
+              const isColorLight = (hexColor) => {
+                  if (!hexColor) return false;
+                  const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                  const r = parseInt(color.substring(0, 2), 16); // Red
+                  const g = parseInt(color.substring(2, 4), 16); // Green
+                  const b = parseInt(color.substring(4, 6), 16); // Blue
+                  return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
+              };
+
+              // ADICIONADO DE VOLTA: Função de estilo que usa a coluna 'cor' do banco
+              const getTypeBadgeStyle = (typeDescricao) => {
+                  const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
+                  const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cinza padrão se não encontrar
+                  const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff'; // Preto para fundos claros, branco para escuros
+                  
+                  return {
+                      backgroundColor: bgColor,
+                      color: textColor,
+                      border: `1px solid ${bgColor}`
+                  };
               };
 
               React.useEffect(() => {
@@ -503,8 +504,8 @@ function BranchManagement({ userId, userRole, showToast }) {
                   try {
                     const [equipmentRes, tiposRes] = await Promise.all([
                         supabase.from('equipamentos').select('*').order('created_at', { ascending: false }),
-                        // CORREÇÃO PRINCIPAL: Removida a seleção da coluna 'cor'
-                        supabase.from('tipos_implemento').select('id, descricao').is('ativo', true).order('descricao')
+                        // ALTERADO: Adicionada a seleção da coluna 'cor' novamente
+                        supabase.from('tipos_implemento').select('id, descricao, cor').is('ativo', true).order('descricao')
                     ]);
       
                     if (equipmentRes.error) throw equipmentRes.error;
@@ -521,10 +522,8 @@ function BranchManagement({ userId, userRole, showToast }) {
                 };
                 fetchInitialData();
               }, [showToast]);
-
-              // --- Nenhuma outra alteração é necessária no restante das funções ---
-              // (As funções handleAdd, handleEdit, handleDelete, etc. permanecem as mesmas)
-
+              
+              // (As funções de handleAdd, handleUpdate, handleDelete, etc. não precisam de alteração)
               const handleAddEquipment = async (e) => {
                 e.preventDefault();
                 if (!newPlate.trim() || !newModel.trim() || !newBrand.trim() || !newChassis.trim() || !newEquipmentType) {
@@ -542,11 +541,9 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(false);
               };
-
               const handleEditClick = (eq) => { setEditingEquipment({ ...eq }); };
               const handleCancelEdit = () => { setEditingEquipment(null); };
               const handleFieldChange = (e, field) => setEditingEquipment(prev => ({...prev, [field]: e.target.value}));
-              
               const handleUpdateEquipment = async () => {
                 if (!editingEquipment) return;
                 setIsLoading(true);
@@ -561,9 +558,7 @@ function BranchManagement({ userId, userRole, showToast }) {
                 }
                 setIsLoading(false);
               };
-
               const confirmDeleteEquipment = (eq) => { setEquipmentToDelete(eq); setShowConfirmModal(true); };
-
               const handleDeleteEquipment = async () => {
                 if (!equipmentToDelete) return;
                 setIsLoading(true);
@@ -579,7 +574,6 @@ function BranchManagement({ userId, userRole, showToast }) {
                 setShowConfirmModal(false);
                 setEquipmentToDelete(null);
               };
-              
               const filteredEquipmentList = equipmentList.filter(eq =>
                   Object.values(eq).some(val => val && String(val).toLowerCase().includes(searchTerm.toLowerCase()))
               );
@@ -634,10 +628,11 @@ function BranchManagement({ userId, userRole, showToast }) {
                                         React.createElement('td', { className: "px-6 py-4" }, eq.model),
                                         React.createElement('td', { className: "px-6 py-4" }, eq.brand),
                                         React.createElement('td', { className: "px-6 py-4" }, eq.chassis),
-                                        // CORRIGIDO: Voltamos a usar a função de classes CSS
+                                        // ALTERADO: A badge agora usa o estilo dinâmico vindo da função getTypeBadgeStyle
                                         React.createElement('td', { className: "px-6 py-4" },
                                             React.createElement('span', {
-                                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(eq.type)}`
+                                                style: getTypeBadgeStyle(eq.type), // Usa estilo inline
+                                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
                                             }, eq.type)
                                         ),
                                         React.createElement('td', { className: "px-6 py-4" },
@@ -3522,6 +3517,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
