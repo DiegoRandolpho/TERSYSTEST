@@ -1855,13 +1855,9 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                 const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']);
                 const [selectedEquipmentType, setSelectedEquipmentType] = React.useState('Todos os Tipos');
                 const [isLoading, setIsLoading] = React.useState(false);
-
-                // --- INÍCIO DAS ALTERAÇÕES ---
-
-                // ADICIONADO: Estado para armazenar os tipos de implemento com suas cores
                 const [tiposImplemento, setTiposImplemento] = React.useState([]);
 
-                // ADICIONADO: Função auxiliar para verificar a luminosidade da cor
+                // Funções auxiliares (isColorLight, getTypeBadgeStyle) permanecem as mesmas
                 const isColorLight = (hexColor) => {
                     if (!hexColor) return false;
                     const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
@@ -1871,40 +1867,24 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                     return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
                 };
 
-                // ALTERADO: Nova função que retorna um objeto de estilo inline
                 const getTypeBadgeStyle = (typeDescricao) => {
                     const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
-                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cor padrão
+                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6';
                     const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
                     return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
                 };
                 
-                // REMOVIDO: A função antiga que retornava classes CSS
-                /*
-                const getTypeBadgeClasses = (type) => {
-                    switch (type) {
-                        case 'BOMBA': return 'bg-blue-100 text-blue-800';
-                        case 'BETONEIRA': return 'bg-green-100 text-green-800';
-                        case 'BOMBA LANÇA': return 'bg-yellow-100 text-yellow-800';
-                        default: return 'bg-gray-100 text-gray-800';
-                    }
-                };
-                */
-
-                // --- FIM DAS ALTERAÇÕES ---
-
                 const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR') : '';
                 
                 React.useEffect(() => {
                     const fetchData = async () => {
                         setIsLoading(true);
                         try {
-                            // ALTERADO: Adicionada a busca pela tabela 'tipos_implemento'
                             const [usersRes, branchesRes, equipmentRes, tiposImplementoRes] = await Promise.all([
                                 supabase.from('app_users').select('username').eq('role', 'supervisor'),
                                 supabase.from('filiais').select('name, responsible'),
                                 supabase.from('equipamentos').select('plate, type, model, brand, chassis, owned_by'),
-                                supabase.from('tipos_implemento').select('descricao, cor') // <-- Nova busca
+                                supabase.from('tipos_implemento').select('descricao, cor')
                             ]);
 
                             if (usersRes.error) throw usersRes.error;
@@ -1912,9 +1892,7 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                             if (equipmentRes.error) throw equipmentRes.error;
                             if (tiposImplementoRes.error) throw tiposImplementoRes.error;
 
-                            // ADICIONADO: Armazena os tipos de implemento e suas cores no estado
                             setTiposImplemento(tiposImplementoRes.data || []);
-
                             setAvailableUsers(['Todos os Responsáveis', ...usersRes.data.map(u => u.username)]);
                             setAvailableBranches(['Todas as Filiais', ...branchesRes.data.map(b => b.name)]);
                             setAllBranches(branchesRes.data);
@@ -1949,7 +1927,6 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                                 equipmentForCounting = equipmentForCounting.filter(eq => eq.type === selectedEquipmentType);
                             }
                             
-                            // A lógica de contagem e filtragem dos dados do dashboard permanece a mesma
                             const counts = tiposImplemento.reduce((acc, tipo) => ({ ...acc, [tipo.descricao]: 0 }), {});
                             equipmentForCounting.forEach(eq => { if (counts[eq.type] !== undefined) counts[eq.type]++; });
                             setEquipmentCounts(counts);
@@ -1983,9 +1960,8 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                         setIsLoading(false);
                     };
                     fetchDashboardData();
-                }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast, tiposImplemento]); // Adicionado tiposImplemento às dependências
+                }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast, tiposImplemento]);
                 
-                // O restante da função (exportToCSV, etc.) permanece o mesmo...
                 const exportToCSV = () => {
                     const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
                     const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
@@ -2009,25 +1985,41 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
                         React.createElement('select', { value: selectedBranch, onChange: e => setSelectedBranch(e.target.value), className: "p-2 border rounded" }, availableBranches.map(b => React.createElement('option',{key: b, value: b}, b))),
                         React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
-                        // ALTERADO: O filtro de tipos agora também é dinâmico
                         React.createElement('select', { value: selectedEquipmentType, onChange: e => setSelectedEquipmentType(e.target.value), className: "p-2 border rounded" },
                             React.createElement('option', { value: 'Todos os Tipos' }, 'Todos os Tipos'),
                             tiposImplemento.map(t => React.createElement('option',{key: t.descricao, value: t.descricao}, t.descricao))
                         )
                     ),
                     React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
+                    
+                    // --- ALTERAÇÃO 1 AQUI ---
                     React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" },
-                        Object.entries(equipmentCounts).map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, React.createElement('p', {className: "font-semibold"}, type), React.createElement('p', {className: "text-2xl font-bold"}, count)))
+                        Object.entries(equipmentCounts)
+                            .filter(([type, count]) => count > 0) // Adicionado filtro para remover itens com contagem zero
+                            .map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, 
+                                React.createElement('p', {className: "font-semibold"}, type), 
+                                React.createElement('p', {className: "text-2xl font-bold"}, count)
+                            ))
                     ),
+
                     React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
+
+                    // --- ALTERAÇÃO 2 AQUI ---
                     React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
-                        React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
-                            const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
-                            // Usa a nova função de estilo para a barra de progresso
-                            const barStyle = getTypeBadgeStyle(type);
-                            return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', { style:{ width: `${percentage}%`, backgroundColor: barStyle.backgroundColor }, className:`h-2.5 rounded-full`})))
-                        })
+                        React.createElement('p',{}, "Nenhum equipamento para exibir.") : 
+                        Object.entries(equipmentCounts)
+                            .filter(([type, count]) => count > 0) // Adicionado filtro aqui também para consistência
+                            .map(([type, count]) => {
+                                const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
+                                const barStyle = getTypeBadgeStyle(type);
+                                return React.createElement('div', {key: type}, `${type}: ${percentage}%`, 
+                                    React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, 
+                                        React.createElement('div', { style:{ width: `${percentage}%`, backgroundColor: barStyle.backgroundColor }, className:`h-2.5 rounded-full`})
+                                    )
+                                );
+                            })
                     ),
+
                     React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
                     React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
                         React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
@@ -2047,8 +2039,6 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                                     React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.marcaEquipamento),
                                     React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.chassiEquipamento),
                                     React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.propriedadeEquipamento),
-                                    
-                                    // ALTERADO: A badge na tabela agora usa o estilo dinâmico
                                     React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" },
                                         React.createElement('span', {
                                             style: getTypeBadgeStyle(r.tipoEquipamento),
@@ -2062,7 +2052,6 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
                     )
                 );
             }
-
 function ThirdPartyByRegion({ showToast }) {
     const [reportData, setReportData] = React.useState([]);
     const [filteredData, setFilteredData] = React.useState([]);
@@ -3708,6 +3697,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
