@@ -1845,195 +1845,223 @@ function BranchTransfer({ userId, setCurrentPage, showToast }) {
             }
 
                        function Dashboard({ userId, showToast }) {
-    const [equipmentCounts, setEquipmentCounts] = React.useState({ 'BOMBA LANÇA': 0, 'BOMBA': 0, 'BETONEIRA': 0 });
-    const [registros, setRegistros] = React.useState([]);
-    const [allEquipment, setAllEquipment] = React.useState([]);
-    const [allBranches, setAllBranches] = React.useState([]);
-    const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
-    const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
-    const [selectedBranch, setSelectedBranch] = React.useState('Todas as Filiais');
-    const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']);
-    const [selectedEquipmentType, setSelectedEquipmentType] = React.useState('Todos os Tipos');
-    const equipmentTypes = ['Todos os Tipos', "BOMBA LANÇA", "BOMBA", "BETONEIRA"];
-    const [isLoading, setIsLoading] = React.useState(false);
-    
-    const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+                const [equipmentCounts, setEquipmentCounts] = React.useState({});
+                const [registros, setRegistros] = React.useState([]);
+                const [allEquipment, setAllEquipment] = React.useState([]);
+                const [allBranches, setAllBranches] = React.useState([]);
+                const [selectedUser, setSelectedUser] = React.useState('Todos os Responsáveis');
+                const [availableUsers, setAvailableUsers] = React.useState(['Todos os Responsáveis']);
+                const [selectedBranch, setSelectedBranch] = React.useState('Todas as Filiais');
+                const [availableBranches, setAvailableBranches] = React.useState(['Todas as Filiais']);
+                const [selectedEquipmentType, setSelectedEquipmentType] = React.useState('Todos os Tipos');
+                const [isLoading, setIsLoading] = React.useState(false);
 
-    React.useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const { data: usersData } = await supabase.from('app_users').select('username').eq('role', 'supervisor');
-                setAvailableUsers(['Todos os Responsáveis', ...usersData.map(u => u.username)]);
+                // --- INÍCIO DAS ALTERAÇÕES ---
 
-                const { data: branchesData } = await supabase.from('filiais').select('name, responsible');
-                setAvailableBranches(['Todas as Filiais', ...branchesData.map(b => b.name)]);
-                setAllBranches(branchesData);
+                // ADICIONADO: Estado para armazenar os tipos de implemento com suas cores
+                const [tiposImplemento, setTiposImplemento] = React.useState([]);
 
-                const { data: equipmentData } = await supabase.from('equipamentos').select('plate, type, model, brand, chassis, owned_by');
-                setAllEquipment(equipmentData);
-            } catch (e) {
-                showToast("Erro ao carregar filtros.", "error");
-            }
-            setIsLoading(false);
-        };
-        fetchData();
-    }, [showToast]);
+                // ADICIONADO: Função auxiliar para verificar a luminosidade da cor
+                const isColorLight = (hexColor) => {
+                    if (!hexColor) return false;
+                    const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                    const r = parseInt(color.substring(0, 2), 16);
+                    const g = parseInt(color.substring(2, 4), 16);
+                    const b = parseInt(color.substring(4, 6), 16);
+                    return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
+                };
 
-    React.useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (allBranches.length === 0 || allEquipment.length === 0) return;
-            setIsLoading(true);
-            try {
-                const { data: transfersData } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
-                const currentBranchMap = new Map(transfersData.map(t => [t.plate, t.newBranch]));
-
-                let equipmentForCounting = allEquipment;
+                // ALTERADO: Nova função que retorna um objeto de estilo inline
+                const getTypeBadgeStyle = (typeDescricao) => {
+                    const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
+                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cor padrão
+                    const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
+                    return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
+                };
                 
-                if (selectedUser !== 'Todos os Responsáveis') {
-                    const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
-                    equipmentForCounting = equipmentForCounting.filter(eq => userBranches.includes(currentBranchMap.get(eq.plate)));
-                }
-                if (selectedBranch !== 'Todas as Filiais') {
-                    equipmentForCounting = equipmentForCounting.filter(eq => currentBranchMap.get(eq.plate) === selectedBranch);
-                }
-                if (selectedEquipmentType !== 'Todos os Tipos') {
-                    equipmentForCounting = equipmentForCounting.filter(eq => eq.type === selectedEquipmentType);
-                }
+                // REMOVIDO: A função antiga que retornava classes CSS
+                /*
+                const getTypeBadgeClasses = (type) => {
+                    switch (type) {
+                        case 'BOMBA': return 'bg-blue-100 text-blue-800';
+                        case 'BETONEIRA': return 'bg-green-100 text-green-800';
+                        case 'BOMBA LANÇA': return 'bg-yellow-100 text-yellow-800';
+                        default: return 'bg-gray-100 text-gray-800';
+                    }
+                };
+                */
+
+                // --- FIM DAS ALTERAÇÕES ---
+
+                const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR') : '';
                 
-                const counts = { 'BOMBA LANÇA': 0, 'BOMBA': 0, 'BETONEIRA': 0 };
-                equipmentForCounting.forEach(eq => { if (counts[eq.type] !== undefined) counts[eq.type]++; });
-                setEquipmentCounts(counts);
+                React.useEffect(() => {
+                    const fetchData = async () => {
+                        setIsLoading(true);
+                        try {
+                            // ALTERADO: Adicionada a busca pela tabela 'tipos_implemento'
+                            const [usersRes, branchesRes, equipmentRes, tiposImplementoRes] = await Promise.all([
+                                supabase.from('app_users').select('username').eq('role', 'supervisor'),
+                                supabase.from('filiais').select('name, responsible'),
+                                supabase.from('equipamentos').select('plate, type, model, brand, chassis, owned_by'),
+                                supabase.from('tipos_implemento').select('descricao, cor') // <-- Nova busca
+                            ]);
 
-                let query = supabase.from('trocasFilial').select('*').is('ending_date', null).order('newBranch', { ascending: true });
-                if (selectedBranch !== 'Todas as Filiais') query = query.eq('newBranch', selectedBranch);
-                let { data: trocasData } = await query;
+                            if (usersRes.error) throw usersRes.error;
+                            if (branchesRes.error) throw branchesRes.error;
+                            if (equipmentRes.error) throw equipmentRes.error;
+                            if (tiposImplementoRes.error) throw tiposImplementoRes.error;
 
-                if (selectedUser !== 'Todos os Responsáveis') {
-                    const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
-                    trocasData = trocasData.filter(t => userBranches.includes(t.newBranch));
-                }
+                            // ADICIONADO: Armazena os tipos de implemento e suas cores no estado
+                            setTiposImplemento(tiposImplementoRes.data || []);
 
-                let finalData = trocasData.map(t => {
-                    const eq = allEquipment.find(e => e.plate === t.plate);
-                    return { ...t, 
-                        tipoEquipamento: eq?.type, 
-                        modeloEquipamento: eq?.model, 
-                        marcaEquipamento: eq?.brand, 
-                        chassiEquipamento: eq?.chassis,
-                        propriedadeEquipamento: eq?.owned_by
+                            setAvailableUsers(['Todos os Responsáveis', ...usersRes.data.map(u => u.username)]);
+                            setAvailableBranches(['Todas as Filiais', ...branchesRes.data.map(b => b.name)]);
+                            setAllBranches(branchesRes.data);
+                            setAllEquipment(equipmentRes.data);
+
+                        } catch (e) {
+                            showToast("Erro ao carregar filtros.", "error");
+                        }
+                        setIsLoading(false);
                     };
-                });
+                    fetchData();
+                }, [showToast]);
 
-                if (selectedEquipmentType !== 'Todos os Tipos') {
-                    finalData = finalData.filter(d => d.tipoEquipamento === selectedEquipmentType);
-                }
-                setRegistros(finalData);
-            } catch (e) {
-                showToast("Erro ao carregar dados do dashboard.", "error");
-            }
-            setIsLoading(false);
-        };
-        fetchDashboardData();
-    }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast]);
-    
-    const exportToCSV = () => {
-    // MODIFICAÇÃO 3: Adicionado 'Propriedade' ao cabeçalho do CSV
-    const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
-    // MODIFICAÇÃO 4: Adicionado 'propriedadeEquipamento' aos dados de linha do CSV
-    const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
-    
-    // CORREÇÃO: Trocado "\n" por "\r\n" para compatibilidade com Excel
-    let csvContent = headers.join(";") + "\r\n" + rows.map(e => e.join(";")).join("\r\n");
+                React.useEffect(() => {
+                    const fetchDashboardData = async () => {
+                        if (allBranches.length === 0 || allEquipment.length === 0) return;
+                        setIsLoading(true);
+                        try {
+                            const { data: transfersData } = await supabase.from('trocasFilial').select('plate, newBranch').is('ending_date', null);
+                            const currentBranchMap = new Map(transfersData.map(t => [t.plate, t.newBranch]));
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "dashboard.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+                            let equipmentForCounting = allEquipment;
+                            
+                            if (selectedUser !== 'Todos os Responsáveis') {
+                                const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
+                                equipmentForCounting = equipmentForCounting.filter(eq => userBranches.includes(currentBranchMap.get(eq.plate)));
+                            }
+                            if (selectedBranch !== 'Todas as Filiais') {
+                                equipmentForCounting = equipmentForCounting.filter(eq => currentBranchMap.get(eq.plate) === selectedBranch);
+                            }
+                            if (selectedEquipmentType !== 'Todos os Tipos') {
+                                equipmentForCounting = equipmentForCounting.filter(eq => eq.type === selectedEquipmentType);
+                            }
+                            
+                            // A lógica de contagem e filtragem dos dados do dashboard permanece a mesma
+                            const counts = tiposImplemento.reduce((acc, tipo) => ({ ...acc, [tipo.descricao]: 0 }), {});
+                            equipmentForCounting.forEach(eq => { if (counts[eq.type] !== undefined) counts[eq.type]++; });
+                            setEquipmentCounts(counts);
 
-    const totalEquipment = Object.values(equipmentCounts).reduce((a, b) => a + b, 0);
+                            let query = supabase.from('trocasFilial').select('*').is('ending_date', null).order('newBranch', { ascending: true });
+                            if (selectedBranch !== 'Todas as Filiais') query = query.eq('newBranch', selectedBranch);
+                            let { data: trocasData } = await query;
 
-    // Função auxiliar para as tags
-    const getTypeBadgeClasses = (type) => {
-        switch (type) {
-            case 'BOMBA':
-                return 'bg-blue-100 text-blue-800';
-            case 'BETONEIRA':
-                return 'bg-green-100 text-green-800';
-            case 'BOMBA LANÇA':
-                return 'bg-yellow-100 text-yellow-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
+                            if (selectedUser !== 'Todos os Responsáveis') {
+                                const userBranches = allBranches.filter(b => b.responsible === selectedUser).map(b => b.name);
+                                trocasData = trocasData.filter(t => userBranches.includes(t.newBranch));
+                            }
 
-    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('div', { className: "flex justify-between items-center mb-6" },
-            React.createElement('h2', { className: "text-2xl font-bold" }, "Dashboard"),
-            React.createElement('button', { onClick: exportToCSV, className: "p-2 bg-green-600 text-white rounded" }, "Exportar CSV")
-        ),
-        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-            React.createElement('select', { value: selectedBranch, onChange: e => setSelectedBranch(e.target.value), className: "p-2 border rounded" }, availableBranches.map(b => React.createElement('option',{key: b, value: b}, b))),
-            React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
-            React.createElement('select', { value: selectedEquipmentType, onChange: e => setSelectedEquipmentType(e.target.value), className: "p-2 border rounded" }, equipmentTypes.map(t => React.createElement('option',{key: t, value: t}, t)))
-        ),
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
-        React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" },
-            Object.entries(equipmentCounts).map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, React.createElement('p', {className: "font-semibold"}, type), React.createElement('p', {className: "text-2xl font-bold"}, count)))
-        ),
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
-        React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
-            React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
-                const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
-                const barColor = type === 'BOMBA LANÇA' ? 'bg-blue-500' : type === 'BETONEIRA' ? 'bg-green-500' : 'bg-yellow-500';
-                return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', {className:`${barColor} h-2.5 rounded-full`, style:{width: `${percentage}%`}})))
-            })
-        ),
-        // AQUI COMEÇA A TABELA ATUALIZADA
-        React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
-        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
-            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
-                    React.createElement('tr', null,
-                        ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início"].map(h => 
-                            React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h)
+                            let finalData = trocasData.map(t => {
+                                const eq = allEquipment.find(e => e.plate === t.plate);
+                                return { ...t, 
+                                    tipoEquipamento: eq?.type, 
+                                    modeloEquipamento: eq?.model, 
+                                    marcaEquipamento: eq?.brand, 
+                                    chassiEquipamento: eq?.chassis,
+                                    propriedadeEquipamento: eq?.owned_by
+                                };
+                            });
+                            if (selectedEquipmentType !== 'Todos os Tipos') {
+                                finalData = finalData.filter(d => d.tipoEquipamento === selectedEquipmentType);
+                            }
+                            setRegistros(finalData);
+                        } catch (e) {
+                            showToast("Erro ao carregar dados do dashboard.", "error");
+                        }
+                        setIsLoading(false);
+                    };
+                    fetchDashboardData();
+                }, [selectedUser, selectedBranch, selectedEquipmentType, allBranches, allEquipment, showToast, tiposImplemento]); // Adicionado tiposImplemento às dependências
+                
+                // O restante da função (exportToCSV, etc.) permanece o mesmo...
+                const exportToCSV = () => {
+                    const headers = ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início", "Status"];
+                    const rows = registros.map(r => [r.newBranch, r.plate, r.modeloEquipamento, r.marcaEquipamento, r.chassiEquipamento, r.propriedadeEquipamento, r.tipoEquipamento, formatDate(r.executionDate), r.status]);
+                    let csvContent = headers.join(";") + "\r\n" + rows.map(e => e.join(";")).join("\r\n");
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); 
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "dashboard.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+                const totalEquipment = Object.values(equipmentCounts).reduce((a, b) => a + b, 0);
+
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                        React.createElement('h2', { className: "text-2xl font-bold" }, "Dashboard"),
+                        React.createElement('button', { onClick: exportToCSV, className: "p-2 bg-green-600 text-white rounded" }, "Exportar CSV")
+                    ),
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('select', { value: selectedBranch, onChange: e => setSelectedBranch(e.target.value), className: "p-2 border rounded" }, availableBranches.map(b => React.createElement('option',{key: b, value: b}, b))),
+                        React.createElement('select', { value: selectedUser, onChange: e => setSelectedUser(e.target.value), className: "p-2 border rounded" }, availableUsers.map(u => React.createElement('option',{key: u, value: u}, u))),
+                        // ALTERADO: O filtro de tipos agora também é dinâmico
+                        React.createElement('select', { value: selectedEquipmentType, onChange: e => setSelectedEquipmentType(e.target.value), className: "p-2 border rounded" },
+                            React.createElement('option', { value: 'Todos os Tipos' }, 'Todos os Tipos'),
+                            tiposImplemento.map(t => React.createElement('option',{key: t.descricao, value: t.descricao}, t.descricao))
+                        )
+                    ),
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Visão Geral"),
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" },
+                        Object.entries(equipmentCounts).map(([type, count]) => React.createElement('div', { key: type, className: "p-4 bg-gray-50 rounded-lg" }, React.createElement('p', {className: "font-semibold"}, type), React.createElement('p', {className: "text-2xl font-bold"}, count)))
+                    ),
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Distribuição"),
+                    React.createElement('div', { className: "mb-8 space-y-2" }, totalEquipment === 0 ?
+                        React.createElement('p',{}, "Nenhum equipamento para exibir.") : Object.entries(equipmentCounts).map(([type, count]) => {
+                            const percentage = totalEquipment > 0 ? (count / totalEquipment * 100).toFixed(1) : 0;
+                            // Usa a nova função de estilo para a barra de progresso
+                            const barStyle = getTypeBadgeStyle(type);
+                            return React.createElement('div', {key: type}, `${type}: ${percentage}%`, React.createElement('div',{className:"w-full bg-gray-200 rounded-full h-2.5"}, React.createElement('div', { style:{ width: `${percentage}%`, backgroundColor: barStyle.backgroundColor }, className:`h-2.5 rounded-full`})))
+                        })
+                    ),
+                    React.createElement('h3', { className: "text-xl font-semibold mb-4" }, "Tabela de Equipamentos Ativos"),
+                    React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                        React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                            React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                                React.createElement('tr', null,
+                                    ["Filial", "Placa", "Modelo", "Marca", "Chassi", "Propriedade", "Tipo", "Data Início"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200 last:border-r-0" }, h))
+                                )
+                            ),
+                            React.createElement('tbody', null,
+                                isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
+                                registros.length === 0 ?
+                                React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Nenhum equipamento encontrado.")) :
+                                registros.map(r => React.createElement('tr', { key: r.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.newBranch),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, React.createElement('span', { className: "font-medium text-slate-800" }, r.plate)),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.modeloEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.marcaEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.chassiEquipamento),
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.propriedadeEquipamento),
+                                    
+                                    // ALTERADO: A badge na tabela agora usa o estilo dinâmico
+                                    React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" },
+                                        React.createElement('span', {
+                                            style: getTypeBadgeStyle(r.tipoEquipamento),
+                                            className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
+                                        }, r.tipoEquipamento)
+                                    ),
+                                    React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate))
+                                ))
+                            )
                         )
                     )
-                ),
-                React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center" }, "Carregando...")) :
-                    registros.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: 8, className: "p-4 text-center text-slate-500" }, "Nenhum equipamento encontrado.")) :
-                    registros.map(r => React.createElement('tr', { 
-                        key: r.id, 
-                        className: "hover:bg-blue-50 even:bg-slate-50" 
-                    },
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.newBranch),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, 
-                            React.createElement('span', { className: "font-medium text-slate-800" }, r.plate)
-                        ),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.modeloEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.marcaEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.chassiEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" }, r.propriedadeEquipamento),
-                        React.createElement('td', { className: "px-6 py-4 border-r border-slate-200 last:border-r-0" },
-                            React.createElement('span', {
-                                className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(r.tipoEquipamento)}`
-                            }, r.tipoEquipamento)
-                        ),
-                        React.createElement('td', { className: "px-6 py-4" }, formatDate(r.executionDate))
-                    ))
-                )
-            )
-        )
-    );
-}
-/* INÍCIO DO CÓDIGO PARA ADICIONAR A FUNÇÃO TurnoverDashboard */
-/* INÍCIO DO CÓDIGO DO NOVO COMPONENTE ThirdPartyByRegion */
+                );
+            }
 
 function ThirdPartyByRegion({ showToast }) {
     const [reportData, setReportData] = React.useState([]);
@@ -3680,6 +3708,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
