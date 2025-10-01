@@ -1168,299 +1168,324 @@ function UserManagement({ userId, showToast }) {
 /* INÍCIO DA FUNÇÃO FINAL E CORRIGIDA */
 
 function ConcessionManagement({ userId, userRole, showToast }) {
-    // Estados do componente
-    const [concessions, setConcessions] = React.useState([]);
-    const [isLoading, setIsLoading] = React.useState(false);
-    const [showForm, setShowForm] = React.useState(false);
-    const [isEditing, setIsEditing] = React.useState(false);
-    const [currentConcession, setCurrentConcession] = React.useState(null);
-    const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '', data_fim: '' };
-    const [formData, setFormData] = React.useState(initialFormState);
-    
-    // Estados para as listas completas (master)
-    const [allPlates, setAllPlates] = React.useState([]);
-    const [allTerceiros, setAllTerceiros] = React.useState([]);
+                // Estados do componente
+                const [concessions, setConcessions] = React.useState([]);
+                const [isLoading, setIsLoading] = React.useState(false);
+                const [showForm, setShowForm] = React.useState(false);
+                const [isEditing, setIsEditing] = React.useState(false);
+                const [currentConcession, setCurrentConcession] = React.useState(null);
+                const initialFormState = { placa: '', codSAP: '', valorfixo: '', data_inicio: '', data_fim: '' };
+                const [formData, setFormData] = React.useState(initialFormState);
+                const [allPlates, setAllPlates] = React.useState([]);
+                const [allTerceiros, setAllTerceiros] = React.useState([]);
+                const [placaSearch, setPlacaSearch] = React.useState('');
+                const [terceiroSearch, setTerceiroSearch] = React.useState('');
+                const [filteredPlates, setFilteredPlates] = React.useState([]);
+                const [filteredTerceiros, setFilteredTerceiros] = React.useState([]);
+                const [searchTerm, setSearchTerm] = React.useState('');
+                const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+                const [concessionToEnd, setConcessionToEnd] = React.useState(null);
 
-    // --- LÓGICA DE AUTOCOMPLETAR ---
-    const [placaSearch, setPlacaSearch] = React.useState('');
-    const [terceiroSearch, setTerceiroSearch] = React.useState('');
-    const [filteredPlates, setFilteredPlates] = React.useState([]);
-    const [filteredTerceiros, setFilteredTerceiros] = React.useState([]);
-    
-    // LINHA FALTANTE ADICIONADA AQUI:
-    const [searchTerm, setSearchTerm] = React.useState('');
-    
-    const [showConfirmModal, setShowConfirmModal] = React.useState(false);
-    const [concessionToEnd, setConcessionToEnd] = React.useState(null);
+                // --- INÍCIO DAS ALTERAÇÕES ---
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '—';
-        const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
-        return date.toLocaleDateString('pt-BR');
-    };
-    
-    const getTypeBadgeClasses = (type) => {
-        switch (type) {
-            case 'BOMBA': return 'bg-blue-100 text-blue-800';
-            case 'BETONEIRA': return 'bg-green-100 text-green-800';
-            case 'BOMBA LANÇA': return 'bg-yellow-100 text-yellow-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
-    
-    const getConcessionStatusBadge = (isFinished) => {
-        const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
-        if (isFinished) {
-            return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, "Encerrada");
-        }
-        return null;
-    };
+                // ADICIONADO: Estado para armazenar os tipos de implemento com suas cores
+                const [tiposImplemento, setTiposImplemento] = React.useState([]);
 
-    const fetchAllData = React.useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const [concessaoRes, terceirosRes, equipamentosRes] = await Promise.all([
-                supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
-                supabase.from('terceiros').select('codSAP, apelido, cnpj, nome_completo, cpf'),
-                supabase.from('equipamentos').select('plate, type')
-            ]);
-            if (concessaoRes.error) throw concessaoRes.error;
-            if (terceirosRes.error) throw terceirosRes.error;
-            if (equipamentosRes.error) throw equipamentosRes.error;
-            
-            const platesData = equipamentosRes.data.map(e => e.plate) || [];
-            const terceirosData = terceirosRes.data || [];
-            
-            setAllPlates(platesData);
-            setAllTerceiros(terceirosData);
-            setFilteredPlates(platesData);
-            setFilteredTerceiros(terceirosData);
+                // ADICIONADO: Função auxiliar para verificar a luminosidade da cor
+                const isColorLight = (hexColor) => {
+                    if (!hexColor) return false;
+                    const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
+                    const r = parseInt(color.substring(0, 2), 16);
+                    const g = parseInt(color.substring(2, 4), 16);
+                    const b = parseInt(color.substring(4, 6), 16);
+                    return ((r * 299) + (g * 587) + (b * 114)) / 1000 > 150;
+                };
 
-            const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
-            const terceirosMap = new Map(terceirosData.map(t => [t.codSAP, t]));
-            const joinedData = concessaoRes.data.map(c => {
-                const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome_completo: 'N/A', cpf: 'N/A' };
-                const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
-                return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome_completo, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
-            });
-            setConcessions(joinedData);
-        } catch (err) {
-            showToast("Erro ao carregar dados de concessão.", "error");
-        }
-        setIsLoading(false);
-    }, [showToast]);
+                // ALTERADO: Nova função que retorna um objeto de estilo inline
+                const getTypeBadgeStyle = (typeDescricao) => {
+                    const tipoEncontrado = tiposImplemento.find(t => t.descricao === typeDescricao);
+                    const bgColor = tipoEncontrado ? tipoEncontrado.cor : '#f3f4f6'; // Cor padrão
+                    const textColor = isColorLight(bgColor) ? '#1f2937' : '#ffffff';
+                    return { backgroundColor: bgColor, color: textColor, border: `1px solid ${bgColor}` };
+                };
+                
+                // REMOVIDO: A função antiga de classes foi substituída pela de cima
+                /*
+                const getTypeBadgeClasses = (type) => {
+                    switch (type) {
+                        case 'BOMBA': return 'bg-blue-100 text-blue-800';
+                        case 'BETONEIRA': return 'bg-green-100 text-green-800';
+                        case 'BOMBA LANÇA': return 'bg-yellow-100 text-yellow-800';
+                        default: return 'bg-gray-100 text-gray-800';
+                    }
+                };
+                */
 
-    React.useEffect(() => { fetchAllData(); }, [fetchAllData]);
+                // --- FIM DAS ALTERAÇÕES ---
 
-    const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    
-    const handlePlacaChange = (e) => {
-        const value = e.target.value.toUpperCase();
-        setPlacaSearch(value);
-        setFormData(prev => ({...prev, placa: value}));
-        if (value) {
-            setFilteredPlates(allPlates.filter(p => p.toUpperCase().includes(value)));
-        } else {
-            setFilteredPlates(allPlates);
-        }
-    };
-    
-    const handleTerceiroChange = (e) => {
-        const value = e.target.value;
-        setTerceiroSearch(value);
-        const match = value.match(/\(([^)]+)\)$/);
-        if (match && match[1]) {
-            setFormData(prev => ({ ...prev, codSAP: match[1] }));
-        } else {
-            setFormData(prev => ({ ...prev, codSAP: '' }));
-        }
-        if (value) {
-            const lowerCaseValue = value.toLowerCase();
-            setFilteredTerceiros(allTerceiros.filter(t => 
-                t.apelido.toLowerCase().includes(lowerCaseValue) || 
-                t.codSAP.toLowerCase().includes(lowerCaseValue)
-            ));
-        } else {
-            setFilteredTerceiros(allTerceiros);
-        }
-    };
+                const getConcessionStatusBadge = (isFinished) => {
+                    const baseClasses = "inline-flex items-center py-1 px-3 rounded-full text-xs font-medium";
+                    if (isFinished) {
+                        return React.createElement('span', { className: `bg-gray-100 text-gray-800 ${baseClasses}` }, "Encerrada");
+                    }
+                    return null;
+                };
 
-    const handleFormSubmit = async (e) => {
-        e.preventDefault();
-        if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
-            showToast("Por favor, preencha todos os campos obrigatórios.", "error");
-            return;
-        }
-        setIsLoading(true);
-        try {
-            const record = {
-                placa: formData.placa,
-                codSAP: formData.codSAP,
-                valorfixo: parseFloat(formData.valorfixo),
-                data_inicio: formData.data_inicio,
-                data_fim: formData.data_fim || null
-            };
-            if (isEditing) {
-                const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
-                if (error) throw error;
-                showToast("Concessão atualizada com sucesso!", "success");
-            } else {
-                const { error } = await supabase.from('concessao').insert([record]);
-                if (error) throw error;
-                showToast("Concessão criada com sucesso!", "success");
-            }
-            setShowForm(false);
-            setIsEditing(false);
-            setFormData(initialFormState);
-            setPlacaSearch('');
-            setTerceiroSearch('');
-            fetchAllData();
-        } catch (err) {
-            showToast(`Erro ao salvar concessão: ${err.message}`, "error");
-        }
-        setIsLoading(false);
-    };
+                const fetchAllData = React.useCallback(async () => {
+                    setIsLoading(true);
+                    try {
+                        // ALTERADO: Adicionada a busca pela tabela 'tipos_implemento'
+                        const [concessaoRes, terceirosRes, equipamentosRes, tiposImplementoRes] = await Promise.all([
+                            supabase.from('concessao').select('*').order('data_inicio', { ascending: false }),
+                            supabase.from('terceiros').select('codSAP, apelido, cnpj, nome_completo, cpf'),
+                            supabase.from('equipamentos').select('plate, type'),
+                            supabase.from('tipos_implemento').select('descricao, cor') // <-- Nova busca
+                        ]);
 
-    const handleEditClick = (concession) => {
-        setIsEditing(true);
-        setCurrentConcession(concession);
-        const startDate = concession.data_inicio ? new Date(concession.data_inicio).toISOString().split('T')[0] : '';
-        const endDate = concession.data_fim ? new Date(concession.data_fim).toISOString().split('T')[0] : '';
-        
-        setFormData({
-            placa: concession.placa,
-            codSAP: concession.codSAP,
-            valorfixo: concession.valorfixo,
-            data_inicio: startDate,
-            data_fim: endDate
-        });
+                        if (concessaoRes.error) throw concessaoRes.error;
+                        if (terceirosRes.error) throw terceirosRes.error;
+                        if (equipamentosRes.error) throw equipamentosRes.error;
+                        if (tiposImplementoRes.error) throw tiposImplementoRes.error; // <-- Verificação de erro
 
-        setPlacaSearch(concession.placa);
-        const terceiroCorrespondente = allTerceiros.find(t => t.codSAP === concession.codSAP);
-        if (terceiroCorrespondente) {
-            setTerceiroSearch(`${terceiroCorrespondente.apelido} (${terceiroCorrespondente.codSAP})`);
-        } else {
-            setTerceiroSearch('');
-        }
-        setShowForm(true);
-    };
+                        // ADICIONADO: Armazena os tipos de implemento no estado
+                        setTiposImplemento(tiposImplementoRes.data || []);
+                        
+                        const platesData = equipamentosRes.data.map(e => e.plate) || [];
+                        const terceirosData = terceirosRes.data || [];
+                        
+                        setAllPlates(platesData);
+                        setAllTerceiros(terceirosData);
+                        setFilteredPlates(platesData);
+                        setFilteredTerceiros(terceirosData);
 
-    const handleCancel = () => {
-        setShowForm(false);
-        setIsEditing(false);
-        setFormData(initialFormState);
-        setPlacaSearch('');
-        setTerceiroSearch('');
-    };
-    
-    const confirmEndConcession = (concession) => {
-        setConcessionToEnd(concession);
-        setShowConfirmModal(true);
-    };
-    
-    const handleEndConcession = async () => {
-        if (!concessionToEnd) return;
-        setIsLoading(true);
-        try {
-            const { error } = await supabase.from('concessao').update({ data_fim: new Date().toISOString() }).eq('id', concessionToEnd.id);
-            if (error) throw error;
-            showToast("Concessão encerrada com sucesso!", "success");
-            fetchAllData();
-        } catch (err) {
-            showToast("Erro ao encerrar concessão.", "error");
-        }
-        setShowConfirmModal(false);
-        setConcessionToEnd(null);
-        setIsLoading(false);
-    };
+                        const equipmentMap = new Map(equipamentosRes.data.map(eq => [eq.plate, eq.type]));
+                        const terceirosMap = new Map(terceirosData.map(t => [t.codSAP, t]));
 
-    const filteredList = concessions.filter(c => {
-        const search = searchTerm.toLowerCase();
-        return Object.values(c).some(val => val && String(val).toLowerCase().includes(search));
-    });
+                        const joinedData = concessaoRes.data.map(c => {
+                            const terceiroInfo = terceirosMap.get(c.codSAP) || { apelido: 'N/A', cnpj: 'N/A', nome_completo: 'N/A', cpf: 'N/A' };
+                            const tipoImplemento = equipmentMap.get(c.placa) || 'N/A';
+                            return { ...c, apelido: terceiroInfo.apelido, cnpj: terceiroInfo.cnpj, nome: terceiroInfo.nome_completo, cpf: terceiroInfo.cpf, tipoImplemento: tipoImplemento };
+                        });
+                        setConcessions(joinedData);
+                    } catch (err) {
+                        showToast("Erro ao carregar dados de concessão.", "error");
+                    }
+                    setIsLoading(false);
+                }, [showToast]);
 
-    return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
-        React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
-        userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
-            React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); setTerceiroSearch(''); setPlacaSearch(''); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
-                React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
-                "Nova Concessão"
-            )
-        ),
-        
-        showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
-            React.createElement('div', null,
-                React.createElement('input', {
-                    name: "placa", value: placaSearch, onChange: handlePlacaChange,
-                    className: "w-full p-2 border rounded", placeholder: "Digite para pesquisar a placa...",
-                    list: "lista-de-placas", required: true, autoComplete: "off"
-                }),
-                React.createElement('datalist', { id: "lista-de-placas" },
-                    filteredPlates.map(p => React.createElement('option', { key: p, value: p }))
-                )
-            ),
-            React.createElement('div', null,
-                 React.createElement('input', {
-                    name: "terceiro", value: terceiroSearch, onChange: handleTerceiroChange,
-                    className: "w-full p-2 border rounded", placeholder: "Pesquise o apelido do terceiro...",
-                    list: "lista-de-terceiros", required: true, autoComplete: "off"
-                }),
-                React.createElement('datalist', { id: "lista-de-terceiros" },
-                    filteredTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: `${t.apelido} (${t.codSAP})` }))
-                )
-            ),
-            React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true }),
-            React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
-            React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded" }),
-            React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
-                React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
-                React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
-            )
-        ),
+                // O restante da função (useEffect, handlers, etc.) permanece o mesmo...
 
-        React.createElement('input', { type: "text", placeholder: "Buscar na tabela...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
-        React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
-            React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
-                React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
-                    React.createElement('tr', null,
-                        ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome Completo", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
-                        userRole === 'administrador' && React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
-                    )
-                ),
-                React.createElement('tbody', null,
-                    isLoading ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando...")) :
-                    !isLoading && filteredList.length === 0 ? React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
-                    filteredList.map(c =>
-                        React.createElement('tr', { key: c.id, className: "hover:bg-blue-50 even:bg-slate-50" },
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.codSAP),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.apelido),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: 'font-medium text-slate-800' }, c.placa)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium ${getTypeBadgeClasses(c.tipoImplemento)}` }, c.tipoImplemento)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
-                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
-                            userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
-                                c.data_fim ? getConcessionStatusBadge(true) :
-                                React.createElement('div', { className: 'flex justify-center gap-x-4' },
-                                    React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
-                                    React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
+                const formatDate = (dateString) => {
+                    if (!dateString) return '—';
+                    const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
+                    return date.toLocaleDateString('pt-BR');
+                };
+                React.useEffect(() => { fetchAllData(); }, [fetchAllData]);
+                const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+                const handlePlacaChange = (e) => {
+                    const value = e.target.value.toUpperCase();
+                    setPlacaSearch(value);
+                    setFormData(prev => ({...prev, placa: value}));
+                    if (value) {
+                        setFilteredPlates(allPlates.filter(p => p.toUpperCase().includes(value)));
+                    } else {
+                        setFilteredPlates(allPlates);
+                    }
+                };
+                const handleTerceiroChange = (e) => {
+                    const value = e.target.value;
+                    setTerceiroSearch(value);
+                    const match = value.match(/\(([^)]+)\)$/);
+                    if (match && match[1]) {
+                        setFormData(prev => ({ ...prev, codSAP: match[1] }));
+                    } else {
+                        setFormData(prev => ({ ...prev, codSAP: '' }));
+                    }
+                    if (value) {
+                        const lowerCaseValue = value.toLowerCase();
+                        setFilteredTerceiros(allTerceiros.filter(t => 
+                            t.apelido.toLowerCase().includes(lowerCaseValue) || 
+                            t.codSAP.toLowerCase().includes(lowerCaseValue)
+                        ));
+                    } else {
+                        setFilteredTerceiros(allTerceiros);
+                    }
+                };
+                const handleFormSubmit = async (e) => {
+                    e.preventDefault();
+                    if (!formData.placa || !formData.codSAP || !formData.valorfixo || !formData.data_inicio) {
+                        showToast("Por favor, preencha todos os campos obrigatórios.", "error");
+                        return;
+                    }
+                    setIsLoading(true);
+                    try {
+                        const record = {
+                            placa: formData.placa,
+                            codSAP: formData.codSAP,
+                            valorfixo: parseFloat(formData.valorfixo),
+                            data_inicio: formData.data_inicio,
+                            data_fim: formData.data_fim || null
+                        };
+                        if (isEditing) {
+                            const { error } = await supabase.from('concessao').update(record).eq('id', currentConcession.id);
+                            if (error) throw error;
+                            showToast("Concessão atualizada com sucesso!", "success");
+                        } else {
+                            const { error } = await supabase.from('concessao').insert([record]);
+                            if (error) throw error;
+                            showToast("Concessão criada com sucesso!", "success");
+                        }
+                        setShowForm(false);
+                        setIsEditing(false);
+                        setFormData(initialFormState);
+                        setPlacaSearch('');
+                        setTerceiroSearch('');
+                        fetchAllData();
+                    } catch (err) {
+                        showToast(`Erro ao salvar concessão: ${err.message}`, "error");
+                    }
+                    setIsLoading(false);
+                };
+                const handleEditClick = (concession) => {
+                    setIsEditing(true);
+                    setCurrentConcession(concession);
+                    const startDate = concession.data_inicio ? new Date(concession.data_inicio).toISOString().split('T')[0] : '';
+                    const endDate = concession.data_fim ? new Date(concession.data_fim).toISOString().split('T')[0] : '';
+                    setFormData({
+                        placa: concession.placa,
+                        codSAP: concession.codSAP,
+                        valorfixo: concession.valorfixo,
+                        data_inicio: startDate,
+                        data_fim: endDate
+                    });
+                    setPlacaSearch(concession.placa);
+                    const terceiroCorrespondente = allTerceiros.find(t => t.codSAP === concession.codSAP);
+                    if (terceiroCorrespondente) {
+                        setTerceiroSearch(`${terceiroCorrespondente.apelido} (${terceiroCorrespondente.codSAP})`);
+                    } else {
+                        setTerceiroSearch('');
+                    }
+                    setShowForm(true);
+                };
+                const handleCancel = () => {
+                    setShowForm(false);
+                    setIsEditing(false);
+                    setFormData(initialFormState);
+                    setPlacaSearch('');
+                    setTerceiroSearch('');
+                };
+                const confirmEndConcession = (concession) => {
+                    setConcessionToEnd(concession);
+                    setShowConfirmModal(true);
+                };
+                const handleEndConcession = async () => {
+                    if (!concessionToEnd) return;
+                    setIsLoading(true);
+                    try {
+                        const { error } = await supabase.from('concessao').update({ data_fim: new Date().toISOString() }).eq('id', concessionToEnd.id);
+                        if (error) throw error;
+                        showToast("Concessão encerrada com sucesso!", "success");
+                        fetchAllData();
+                    } catch (err) {
+                        showToast("Erro ao encerrar concessão.", "error");
+                    }
+                    setShowConfirmModal(false);
+                    setConcessionToEnd(null);
+                    setIsLoading(false);
+                };
+                const filteredList = concessions.filter(c => {
+                    const search = searchTerm.toLowerCase();
+                    return Object.values(c).some(val => val && String(val).toLowerCase().includes(search));
+                });
+
+                // O return (JSX) é onde a alteração final é aplicada
+                return React.createElement('div', { className: "bg-white p-6 rounded-xl shadow-lg" },
+                    React.createElement('h2', { className: "text-2xl font-bold text-gray-800 mb-4 text-center" }, "Gestão de Concessões"),
+                    userRole === 'administrador' && !showForm && React.createElement('div', { className: "flex justify-center mb-6" },
+                        React.createElement('button', { onClick: () => { setShowForm(true); setIsEditing(false); setFormData(initialFormState); setTerceiroSearch(''); setPlacaSearch(''); }, className: "p-2 bg-blue-600 text-white rounded flex items-center" },
+                            React.createElement(LucideIcon, { name: 'PlusCircle', className: 'mr-2' }),
+                            "Nova Concessão"
+                        )
+                    ),
+                    showForm && userRole === 'administrador' && React.createElement('form', { onSubmit: handleFormSubmit, className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 p-4 border rounded" },
+                        React.createElement('div', null,
+                            React.createElement('input', {
+                                name: "placa", value: placaSearch, onChange: handlePlacaChange,
+                                className: "w-full p-2 border rounded", placeholder: "Digite para pesquisar a placa...",
+                                list: "lista-de-placas", required: true, autoComplete: "off"
+                            }),
+                            React.createElement('datalist', { id: "lista-de-placas" },
+                                filteredPlates.map(p => React.createElement('option', { key: p, value: p }))
+                            )
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('input', {
+                                name: "terceiro", value: terceiroSearch, onChange: handleTerceiroChange,
+                                className: "w-full p-2 border rounded", placeholder: "Pesquise o apelido do terceiro...",
+                                list: "lista-de-terceiros", required: true, autoComplete: "off"
+                            }),
+                            React.createElement('datalist', { id: "lista-de-terceiros" },
+                                filteredTerceiros.map(t => React.createElement('option', { key: t.codSAP, value: `${t.apelido} (${t.codSAP})` }))
+                            )
+                        ),
+                        React.createElement('input', { name: "valorfixo", type: "number", step: "0.01", value: formData.valorfixo, onChange: handleInputChange, placeholder: "Valor Fixo", className: "p-2 border rounded", required: true }),
+                        React.createElement('input', { name: "data_inicio", type: "date", value: formData.data_inicio, onChange: handleInputChange, className: "p-2 border rounded", required: true }),
+                        React.createElement('input', { name: "data_fim", type: "date", value: formData.data_fim, onChange: handleInputChange, className: "p-2 border rounded" }),
+                        React.createElement('div', { className: "lg:col-span-3 flex justify-end gap-4" },
+                            React.createElement('button', { type: "button", onClick: handleCancel, className: "p-2 bg-gray-300 rounded" }, "Cancelar"),
+                            React.createElement('button', { type: "submit", className: "p-2 bg-blue-600 text-white rounded", disabled: isLoading }, isLoading ? 'Salvando...' : 'Salvar')
+                        )
+                    ),
+                    React.createElement('input', { type: "text", placeholder: "Buscar na tabela...", value: searchTerm, onChange: e => setSearchTerm(e.target.value), className: "w-full p-2 border rounded mb-4" }),
+                    React.createElement('div', { className: "rounded-lg border border-slate-200 shadow-sm overflow-hidden" },
+                        React.createElement('table', { className: "w-full text-sm text-left text-slate-600" },
+                            React.createElement('thead', { className: "text-xs text-slate-700 uppercase bg-slate-100" },
+                                React.createElement('tr', null,
+                                    ["Cód. SAP", "Apelido", "Placa", "Tipo Implemento", "Nome Completo", "CNPJ", "CPF", "Início", "Fim", "Valor Fixo"].map(h => React.createElement('th', { key: h, className: "px-6 py-4 font-semibold border-b border-r border-slate-200" }, h)),
+                                    userRole === 'administrador' && React.createElement('th', { className: "px-6 py-4 font-semibold border-b border-slate-200 text-center" }, "Ações")
                                 )
+                            ),
+                            React.createElement('tbody', null,
+                                isLoading ?
+                                    React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Carregando...")) :
+                                !isLoading && filteredList.length === 0 ?
+                                    React.createElement('tr', null, React.createElement('td', { colSpan: userRole === 'administrador' ? 11 : 10, className: "p-4 text-center" }, "Nenhuma concessão encontrada.")) :
+                                    filteredList.map(c =>
+                                        React.createElement('tr', { key: c.id, className: "hover:bg-blue-50 even:bg-slate-50" },
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.codSAP),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.apelido),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, React.createElement('span', { className: 'font-medium text-slate-800' }, c.placa)),
+                                            
+                                            // ALTERADO: A badge agora usa o estilo inline dinâmico
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, 
+                                                React.createElement('span', { 
+                                                    style: getTypeBadgeStyle(c.tipoImplemento),
+                                                    className: `inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium`
+                                                }, c.tipoImplemento)
+                                            ),
+
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, c.nome),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCNPJ(c.cnpj)),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatCPF(c.cpf)),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_inicio)),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, formatDate(c.data_fim)),
+                                            React.createElement('td', { className: "px-6 py-4 border-r border-slate-200" }, `R$ ${c.valorfixo.toFixed(2).replace('.', ',')}`),
+                                            userRole === 'administrador' && React.createElement('td', { className: "px-6 py-4 text-center" },
+                                                c.data_fim ?
+                                                    getConcessionStatusBadge(true) :
+                                                    React.createElement('div', { className: 'flex justify-center gap-x-4' },
+                                                        React.createElement('button', { onClick: () => handleEditClick(c), className: "text-gray-400 hover:text-blue-600 transition-colors", title: "Editar" }, React.createElement(LucideIcon, { name: 'Edit', className: 'h-5 w-5' })),
+                                                        React.createElement('button', { onClick: () => confirmEndConcession(c), className: "text-gray-400 hover:text-red-600 transition-colors", title: "Encerrar" }, React.createElement(LucideIcon, { name: 'Ban', className: 'h-5 w-5' }))
+                                                    )
+                                            )
+                                        )
+                                    )
                             )
                         )
-                    )
-                )
-            )
-        ),
-        showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
-    );
-}
-
-/* FIM DA FUNÇÃO FINAL */
-
-/* FIM DA FUNÇÃO FINAL */
+                    ),
+                    showConfirmModal && React.createElement(ConfirmationModal, { message: `Deseja realmente encerrar a concessão para a placa "${concessionToEnd?.placa}"?`, onConfirm: handleEndConcession, onCancel: () => setShowConfirmModal(false) })
+                );
+            }
 /* INÍCIO DO CÓDIGO PARA REINSERIR O WhatsAppButton */
 
 function WhatsAppButton({ phoneNumber, message }) {
@@ -3687,6 +3712,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
