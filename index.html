@@ -160,6 +160,7 @@
     thirdPartyManagement: { title: 'Cadastro de Terceiros', icon: 'User', adminOnly: true },
     concessionManagement: { title: 'Concessão', icon: 'FileText', adminOnly: true },
     contractManagement: { title: 'Contrato/Distrato', icon: 'Edit', adminOnly: true },
+    implementManagement: { title: 'Tipos de Implemento', icon: 'Settings', adminOnly: true },
 };
 
 
@@ -3642,6 +3643,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
         userRole === 'administrador' && React.createElement(MenuCategory, { title: "Cadastro", icon: "PlusCircle", menuKey: "cadastro" },
             React.createElement(MenuItem, { page: 'branchManagement', icon: 'Building', text: 'Filiais' }),
             React.createElement(MenuItem, { page: 'equipmentManagement', icon: 'Truck', text: 'Equipamentos' }),
+            React.createElement(MenuItem, { page: 'implementManagement', icon: 'Settings', text: 'Tipos de Implemento' }),
             React.createElement(MenuItem, { page: 'userManagement', icon: 'Users', text: 'Usuários' }),
             React.createElement(MenuItem, { page: 'thirdPartyManagement', icon: 'User', text: 'Terceiros' }),
             React.createElement(MenuItem, { page: 'concessionManagement', icon: 'FileText', text: 'Concessão' }),
@@ -3684,6 +3686,7 @@ function QuickAccessMenu({ setCurrentPage, userFullname, quickLinks, onEdit }) {
     </script>
 </body>
 </html>
+
 
 
 
